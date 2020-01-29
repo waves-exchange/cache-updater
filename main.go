@@ -2,9 +2,10 @@ package main;
 
 import (
 	"fmt"
+	"github.com/ventuary-lab/cache-updater/assets"
 )
 
 
 func main () {
-	fmt.Println(ASD)
+	fmt.Println(assets.Foo)
 }
