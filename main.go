@@ -6,7 +6,6 @@ import (
 	"github.com/go-pg/pg/v9"
 	"github.com/joho/godotenv"
 	"os"
-	// "github.com/go-pg/pg/v9/orm"
 )
 
 func connectToDb () {
@@ -27,15 +26,34 @@ func connectToDb () {
 
 	defer db.Close()
 
-	var bondsorders []structs.BondsOrder
-	_, err := db.Query(&bondsorders, `SELECT * FROM bonds_orders`)
+	// var bondsorders []structs.BondsOrder
+	// _, err := db.Query(&bondsorders, `SELECT * FROM bonds_orders`)
+
+	newRecord := structs.NeutrinoOrder {
+		Height: "135", Currency: "usd-nb", Owner: "sdfg", Total: "11", Ordernext: nil, Orderprev: nil, Order_id: "dfgdg",
+		Timestamp: 3563456,
+		Status: "new",
+		Resttotal: 154,
+		Type: "liquidate",
+		Isfirst: false, Islast: false,
+	}
+
+	insertErr := db.Insert(&newRecord)
+
+	var bondsorders []structs.NeutrinoOrder
+	_, err := db.Query(&bondsorders, `SELECT * FROM neutrino_orders`)
+
+	if insertErr != nil {
+		fmt.Println("insertErr: ", insertErr)
+		return;
+	}
 	
 	if err != nil {
 		fmt.Println("Error: ", err)
 		return;
 	}
 
-	fmt.Println(bondsorders[0])
+	fmt.Println(bondsorders[len(bondsorders)-1])
 }
 
 func main () {
