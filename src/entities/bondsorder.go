@@ -2,6 +2,8 @@ package entities;
 
 import (
 	"strconv"
+	"math"
+	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
 type BondsOrder struct {
@@ -11,7 +13,7 @@ type BondsOrder struct {
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
-func (bo BondsOrder) GetKeys(id string) []string {
+func (bo *BondsOrder) GetKeys(id string) []string {
 	return []string {
 		"order_height_" + id,
 		"order_owner_" + id,
@@ -23,16 +25,35 @@ func (bo BondsOrder) GetKeys(id string) []string {
 	}
 }
 
-
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
-	height := item["order_height_" + id];
-	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64);
-	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64);
-	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filledtotal_" + id], 64);
+	height := item["order_height_" + id]
+	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
+	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
+	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filledtotal_" + id], 64)
+	status := item["order_status_" + id]
 
-	if totalErr == nil || filledTotalErr == nil || priceErr == nil {
-		return nil;
+	if priceErr == nil {
+		price = 0
 	}
+	if totalErr == nil {
+		total = 0
+	}
+	if filledTotalErr == nil {
+		filledtotal = 0
+	}
+
+	// func ComputeTotal(t, p )
+
+	wavesContractPower := constants.WAVES_CONTRACT_POW
+
+	resttotal := math.Round((total - filledtotal) / wavesContractPower)
+	// restTotal: _round((total - filledTotal) / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
+	amount := math.Round(total / (price * wavesContractPower / 100))
+	// amount: _round(total / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100)), // Bonds amount
+	filledAmount := math.Round(filledtotal / (price * wavesContractPower / 100))
+	// filledAmount: _round(filledTotal / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
+	restAmount := math.Round((total - filledtotal) / (price * wavesContractPower / 100))
+	// restAmount: _round((total - filledTotal) / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
 
 	return &BondsOrder {
 		Height: height,
@@ -41,21 +62,16 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Filledtotal: float64(filledtotal),
 		Timestamp: 1111, // TODO
 		Owner: item["order_owner_" + id],
-		Resttotal: -10,
-		Status: "new",
-		Amount: 100,
-		Filledamount: 101,
-		Restamount: 102,
+		Resttotal: resttotal,
+		Status: status,
+		Amount: amount,
+		Filledamount: filledAmount,
+		Restamount: restAmount,
 		Pairname: "usdn-usdnb",
 		Type: "buy",
 	}
 
     // async _prepareItem(id, item) {
-    //     const index = item.orderbook
-    //         .split('_')
-    //         .filter(Boolean)
-    //         .indexOf(id);
-
     //     const height = item['order_height_' + id];
     //     const price = item['order_price_' + id] || 0;
     //     const total = item['order_total_' + id] || 0;
