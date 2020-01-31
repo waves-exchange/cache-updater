@@ -1,5 +1,5 @@
 package constants;
 
 const (
-	WAVES_CONTRACT_POW = 10e8
+	WAVES_CONTRACT_POW = int(10e8)
 )

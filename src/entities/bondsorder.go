@@ -42,17 +42,17 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		filledtotal = 0
 	}
 
-	// func ComputeTotal(t, p )
+	// func ComputeTotal(t, p )N
 
 	wavesContractPower := constants.WAVES_CONTRACT_POW
 
-	resttotal := math.Round((total - filledtotal) / wavesContractPower)
+	resttotal := math.Round((total - filledtotal) / float64(wavesContractPower))
 	// restTotal: _round((total - filledTotal) / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
-	amount := math.Round(total / (price * wavesContractPower / 100))
+	amount := math.Round(total / (float64(price) * float64(wavesContractPower) / 100))
 	// amount: _round(total / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100)), // Bonds amount
-	filledAmount := math.Round(filledtotal / (price * wavesContractPower / 100))
+	filledAmount := math.Round(filledtotal / (float64(price) * float64(wavesContractPower) / 100))
 	// filledAmount: _round(filledTotal / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
-	restAmount := math.Round((total - filledtotal) / (price * wavesContractPower / 100))
+	restAmount := math.Round((total - filledtotal) / (float64(price) * float64(wavesContractPower) / 100))
 	// restAmount: _round((total - filledTotal) / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
 
 	return &BondsOrder {
