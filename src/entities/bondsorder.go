@@ -3,6 +3,8 @@ package entities;
 import (
 	"strconv"
 	"math"
+	"regexp"
+	"fmt"
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
@@ -24,6 +26,36 @@ func (bo *BondsOrder) GetKeys(id string) []string {
 		"orderbook",
 	}
 }
+
+func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) {
+
+	ids := []string{}
+	heightKey := bo.GetKeys("")[0]
+	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+	nodeKeys := []string{}
+
+	for k := range *nodeData {
+		nodeKeys = append(nodeKeys, k)
+
+		heightRegexMatch, _ := regexp.Match(heightKey, []byte(k))
+
+		if heightRegexMatch {
+			ids = append(ids, k)
+		}
+	}
+
+	if heightRegexErr != nil {
+		return
+	}
+
+	// parsedData := map[string]string{}
+
+	fmt.Printf("HeightRegex: %v \n", heightRegex)
+	fmt.Printf("ids #1: %v \n", ids)
+
+}
+
+func (bo *BondsOrder) UpdateItem () {}
 
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
 	height := item["order_height_" + id]

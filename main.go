@@ -5,7 +5,11 @@ import (
 )
 
 func main () {
-	uc := controllers.DbController{}
+	dbc := controllers.DbController{}
+	uc := controllers.UpdateController{}
+	dbc.UcDelegate = &uc
+	uc.DbDelegate = &dbc
 
-	uc.ConnectToDb()
+	// dbc.ConnectToDb()
+	uc.UpdateAllData()
 }

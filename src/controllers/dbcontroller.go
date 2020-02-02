@@ -6,11 +6,16 @@ import (
 	"github.com/go-pg/pg/v9"
 	"github.com/joho/godotenv"
 	"os"
+	"encoding/json"
+	"strconv"
+	// "regexp"
 )
 
-type DbController struct {}
+type DbController struct {
+	UcDelegate *UpdateController
+}
 
-func (dbc DbController) ConnectToDb () {
+func (dbc *DbController) ConnectToDb () {
 	envLoadErr := godotenv.Load(".env")
 	if envLoadErr != nil {
 		_ = godotenv.Load(".env.example")
@@ -27,16 +32,6 @@ func (dbc DbController) ConnectToDb () {
 	})
 
 	defer db.Close()
-
-	// newRecord := entities.NeutrinoOrder {
-	// 	Height: "135", Currency: "usd-nb", Owner: "sdfg", Total: "11", Ordernext: nil, Orderprev: nil, Order_id: "dfgdg",
-	// 	Timestamp: 3563456,
-	// 	Status: enums.NEW,
-	// 	Resttotal: 154,
-	// 	Type: enums.LIQUIDATE,
-	// 	Isfirst: false, Islast: false,
-	// }
-	// insertErr := db.Insert(&newRecord)
 
 	var bondsorders []entities.NeutrinoOrder
 	_, err := db.Query(&bondsorders, `SELECT * FROM neutrino_orders`)
@@ -63,4 +58,36 @@ func (dbc DbController) ConnectToDb () {
 	}
 
 	fmt.Println(bondsorders[len(bondsorders)-1])
+}
+
+func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
+	var records []entities.DAppStringRecord;
+	var numberRecords []entities.DAappNumberRecord;
+
+	json.Unmarshal([]byte(byteValue), &records)
+	json.Unmarshal([]byte(byteValue), &numberRecords)
+
+	maxcount := 10
+	nodeData := map[string]string{};
+
+	for i := 0; i < len(records); i++ {
+		if i == maxcount {
+			break
+		}
+
+		record := records[i]
+
+		if *record.Value == "" {
+			numberRecord := numberRecords[i]
+
+			*record.Value = strconv.Itoa(*numberRecord.Value)
+		}
+
+		nodeData[record.Key] = *record.Value;
+	}
+
+	// fmt.Printf("Iteration ended. Example val %v \n", nodeData)
+
+	bo := entities.BondsOrder{}
+	bo.UpdateAll(&nodeData)
 }
