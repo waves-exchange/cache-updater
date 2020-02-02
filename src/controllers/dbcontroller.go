@@ -67,14 +67,10 @@ func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
 	json.Unmarshal([]byte(byteValue), &records)
 	json.Unmarshal([]byte(byteValue), &numberRecords)
 
-	maxcount := 10
+
 	nodeData := map[string]string{};
 
 	for i := 0; i < len(records); i++ {
-		if i == maxcount {
-			break
-		}
-
 		record := records[i]
 
 		if *record.Value == "" {

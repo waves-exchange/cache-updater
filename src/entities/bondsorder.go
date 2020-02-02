@@ -30,17 +30,35 @@ func (bo *BondsOrder) GetKeys(id string) []string {
 func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) {
 
 	ids := []string{}
-	heightKey := bo.GetKeys("")[0]
+	defaultRawRegex := "([A-Za-z0-9]{40,50})"
+	heightKey := bo.GetKeys(defaultRawRegex)[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
 	nodeKeys := []string{}
+	// resolveData := map[string] {}
+	resolveData := make(map[string](map[string]string))
 
-	for k := range *nodeData {
+	for k, nodeVal := range *nodeData {
+		resolveData[k] = map[string]string{}
 		nodeKeys = append(nodeKeys, k)
 
-		heightRegexMatch, _ := regexp.Match(heightKey, []byte(k))
+		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
 
-		if heightRegexMatch {
-			ids = append(ids, k)
+		if len(heightRegexSubmatches) < 2 {
+			continue
+		}
+
+		matchedAddress := string(heightRegexSubmatches[1])
+
+		if matchedAddress != "" {
+			ids = append(ids, matchedAddress)
+
+			validKeys := bo.GetKeys(matchedAddress)
+
+			for _, validKey := range validKeys {
+				if StrArrayContains(nodeKeys, validKey) {
+					resolveData[validKey][k] = nodeVal
+				}
+			}
 		}
 	}
 
@@ -48,10 +66,8 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) {
 		return
 	}
 
-	// parsedData := map[string]string{}
-
 	fmt.Printf("HeightRegex: %v \n", heightRegex)
-	fmt.Printf("ids #1: %v \n", ids)
+	fmt.Printf("ID #1: %v; COUNT: %v \n", ids[0], len(ids))
 
 }
 
