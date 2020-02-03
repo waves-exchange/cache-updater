@@ -67,7 +67,6 @@ func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
 	json.Unmarshal([]byte(byteValue), &records)
 	json.Unmarshal([]byte(byteValue), &numberRecords)
 
-
 	nodeData := map[string]string{};
 
 	for i := 0; i < len(records); i++ {
@@ -85,5 +84,7 @@ func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
 	// fmt.Printf("Iteration ended. Example val %v \n", nodeData)
 
 	bo := entities.BondsOrder{}
-	bo.UpdateAll(&nodeData)
+	mappedBondsOrders := bo.UpdateAll(&nodeData)
+
+	
 }

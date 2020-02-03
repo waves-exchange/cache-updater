@@ -2,7 +2,7 @@ package entities;
 
 import (
 	"strconv"
-	"math"
+	// "math"
 	"regexp"
 	"fmt"
 	"github.com/ventuary-lab/cache-updater/src/constants"
@@ -27,8 +27,9 @@ func (bo *BondsOrder) GetKeys(id string) []string {
 	}
 }
 
-func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) {
+func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 	ids := []string{}
+	result := []BondsOrder{}
 	defaultRawRegex := "([A-Za-z0-9]{40,50})"
 	regexKeys := bo.GetKeys(defaultRawRegex)
 	heightKey := regexKeys[0]
@@ -73,35 +74,20 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) {
 		}
 	}
 
-
 	if heightRegexErr != nil {
-		return
+		return result
 	}
 
-	
 	raw := BondsOrder{}
-	fmt.Printf("ID: %v; Val: %v \n", ids[0])
-	fmt.Printf("ParsedVal: %+v \n", raw.MapItemToModel(ids[0], resolveData[ids[0]]))
 
-	/*
-	{
-		height: '1763038',
-		timestamp: 1571838501734,
-		owner: '3PHNudHo6zeuFgop35TVAtnVHitx8SGPRiC',
-		price: 70,
-		total: 0,
-		filledTotal: 0,
-		restTotal: 0,
-		status: 'filled',
-		index: null,
-		amount: 0,
-		filledAmount: 0,
-		restAmount: 0,
-		pairName: 'usd-nb_usd-n',
-		type: 'buy'
+	for _, id := range ids {
+		mappedModel := raw.MapItemToModel(id, resolveData[id])
+		result = append(result, *mappedModel)
 	}
-	*/
 
+	fmt.Printf("ParsedVal: %+v \n", result[0])
+
+	return result
 }
 
 func (bo *BondsOrder) UpdateItem () {}
@@ -110,7 +96,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	height := item["order_height_" + id]
 	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
 	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
-	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filledtotal_" + id], 64)
+	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filled_total_" + id], 64)
 	status := item["order_status_" + id]
 
 	if priceErr != nil {
@@ -123,36 +109,20 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		filledtotal = 0
 	}
 
-	fmt.Printf("Price: %v, Total: %v, FilledTotal: %v \n", price, total, filledtotal)
-	// fmt.Printf("Price: %v, Total: %v, FilledTotal: %v \n", price, total, filledtotal)
-
-	// func ComputeTotal(t, p )N
-
-	wavesContractPower := constants.WAVES_CONTRACT_POW
-
-	total = math.Round(total / float64(wavesContractPower))
-	// total: _round(total / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
-	resttotal := math.Round((total - filledtotal) / float64(wavesContractPower))
-	// restTotal: _round((total - filledTotal) / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
-	amount := math.Round(total / (float64(price) * float64(wavesContractPower) / 100))
-	// amount: _round(total / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100)), // Bonds amount
-	filledAmount := math.Round(filledtotal / (float64(price) * float64(wavesContractPower) / 100))
-	// filledAmount: _round(filledTotal / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
-	restAmount := math.Round((total - filledtotal) / (float64(price) * float64(wavesContractPower) / 100))
-	// restAmount: _round((total - filledTotal) / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
+	wavesContractPower := float64(constants.WAVES_CONTRACT_POW)
 
 	return &BondsOrder {
 		Height: height,
 		Price: int(price),
-		Total: float64(total),
-		Filledtotal: float64(filledtotal),
+		Total: float64(total / wavesContractPower),
+		Filledtotal: float64(filledtotal / wavesContractPower),
 		Timestamp: 1111, // TODO
 		Owner: item["order_owner_" + id],
-		Resttotal: resttotal,
+		Resttotal: (total - filledtotal) / wavesContractPower,
 		Status: status,
-		Amount: amount,
-		Filledamount: filledAmount,
-		Restamount: restAmount,
+		Amount: total / (float64(price) * wavesContractPower / 100),
+		Filledamount: filledtotal / (float64(price) * wavesContractPower / 100),
+		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / 100),
 		Pairname: "usdn-usdnb",
 		Type: "buy",
 	}
