@@ -28,19 +28,26 @@ func (bo *BondsOrder) GetKeys(id string) []string {
 }
 
 func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) {
-
 	ids := []string{}
 	defaultRawRegex := "([A-Za-z0-9]{40,50})"
-	heightKey := bo.GetKeys(defaultRawRegex)[0]
+	regexKeys := bo.GetKeys(defaultRawRegex)
+	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
 	nodeKeys := []string{}
-	// resolveData := map[string] {}
 	resolveData := make(map[string](map[string]string))
 
-	for k, nodeVal := range *nodeData {
-		resolveData[k] = map[string]string{}
-		nodeKeys = append(nodeKeys, k)
+	for k, _ := range *nodeData {
+		for _, regexKey := range regexKeys {
+			compiledRegex := regexp.MustCompile(regexKey)
 
+			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+				continue;
+			}
+		}
+		nodeKeys = append(nodeKeys, k)
+	}
+
+	for _, k := range nodeKeys {
 		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
 
 		if len(heightRegexSubmatches) < 2 {
@@ -52,22 +59,48 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) {
 		if matchedAddress != "" {
 			ids = append(ids, matchedAddress)
 
+			resolveData[matchedAddress] = map[string]string{}
+
 			validKeys := bo.GetKeys(matchedAddress)
 
 			for _, validKey := range validKeys {
-				if StrArrayContains(nodeKeys, validKey) {
-					resolveData[validKey][k] = nodeVal
+				for _, k := range nodeKeys {
+					if k == validKey {
+						resolveData[matchedAddress][k] = (*nodeData)[k]
+					}
 				}
 			}
 		}
 	}
 
+
 	if heightRegexErr != nil {
 		return
 	}
 
-	fmt.Printf("HeightRegex: %v \n", heightRegex)
-	fmt.Printf("ID #1: %v; COUNT: %v \n", ids[0], len(ids))
+	
+	raw := BondsOrder{}
+	fmt.Printf("ID: %v; Val: %v \n", ids[0])
+	fmt.Printf("ParsedVal: %+v \n", raw.MapItemToModel(ids[0], resolveData[ids[0]]))
+
+	/*
+	{
+		height: '1763038',
+		timestamp: 1571838501734,
+		owner: '3PHNudHo6zeuFgop35TVAtnVHitx8SGPRiC',
+		price: 70,
+		total: 0,
+		filledTotal: 0,
+		restTotal: 0,
+		status: 'filled',
+		index: null,
+		amount: 0,
+		filledAmount: 0,
+		restAmount: 0,
+		pairName: 'usd-nb_usd-n',
+		type: 'buy'
+	}
+	*/
 
 }
 
@@ -80,20 +113,25 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filledtotal_" + id], 64)
 	status := item["order_status_" + id]
 
-	if priceErr == nil {
+	if priceErr != nil {
 		price = 0
 	}
-	if totalErr == nil {
+	if totalErr != nil {
 		total = 0
 	}
-	if filledTotalErr == nil {
+	if filledTotalErr != nil {
 		filledtotal = 0
 	}
+
+	fmt.Printf("Price: %v, Total: %v, FilledTotal: %v \n", price, total, filledtotal)
+	// fmt.Printf("Price: %v, Total: %v, FilledTotal: %v \n", price, total, filledtotal)
 
 	// func ComputeTotal(t, p )N
 
 	wavesContractPower := constants.WAVES_CONTRACT_POW
 
+	total = math.Round(total / float64(wavesContractPower))
+	// total: _round(total / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
 	resttotal := math.Round((total - filledtotal) / float64(wavesContractPower))
 	// restTotal: _round((total - filledTotal) / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
 	amount := math.Round(total / (float64(price) * float64(wavesContractPower) / 100))
@@ -118,36 +156,4 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Pairname: "usdn-usdnb",
 		Type: "buy",
 	}
-
-    // async _prepareItem(id, item) {
-    //     const height = item['order_height_' + id];
-    //     const price = item['order_price_' + id] || 0;
-    //     const total = item['order_total_' + id] || 0;
-    //     const filledTotal = item['order_filled_total_' + id] || 0;
-    //     return {
-    //         -height,
-    //         -timestamp: (await this.heightListener.getTimestamps([height]))[height],
-    //         -owner: item['order_owner_' + id],
-    //         -price: Number(price),
-    //         -total: _round(total / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
-    //         -filledTotal: _round(filledTotal / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
-    //         restTotal: _round((total - filledTotal) / CurrencyEnum.getContractPow(CurrencyEnum.WAVES), 2),
-    //         status: item['order_status_' + id],
-    //         index: index !== -1 ? index : null,
-    //         amount: _round(total / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100)), // Bonds amount
-    //         filledAmount: _round(filledTotal / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
-    //         restAmount: _round((total - filledTotal) / (price * CurrencyEnum.getContractPow(CurrencyEnum.WAVES) / 100), 2),
-    //         pairName: this.pairName,
-    //         type: OrderTypeEnum.BUY,
-    //     };
-	// }
-	
-	// item: {                                                                                             r
-	// 	order_height_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ: '1868066',
-	// 	order_owner_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ: '3PGmja5rWBPiQ7n9eLSBgQBd6EzTmUFgddB',
-	// 	order_price_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ: '55',
-	// 	order_total_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ: '1434000000',
-	// 	order_status_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ: 'canceled',
-	// 	orderbook: ''
-	//   } 
 }
