@@ -2,9 +2,7 @@ package entities;
 
 import (
 	"strconv"
-	// "math"
 	"regexp"
-	"fmt"
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
