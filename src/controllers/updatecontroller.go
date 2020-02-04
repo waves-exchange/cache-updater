@@ -2,6 +2,7 @@ package controllers;
 
 import (
 	"fmt"
+	"net/http"
 	"io/ioutil"
 	"os"
 )
@@ -11,16 +12,19 @@ type UpdateController struct {
 }
 
 func (uc *UpdateController) UpdateAllData () {
-	jsonFile, err := os.Open("scriptdata.test.json")
-
+	dAppAddress := os.Getenv("DAPP_ADDRESS")
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := nodeUrl + "/addresses/data/" + dAppAddress
+	response, err := http.Get(connectionUrl)
+	
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	
+	defer response.Body.Close()
 
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, _ := ioutil.ReadAll(response.Body)
 
 	uc.DbDelegate.HandleRecordsUpdate(byteValue)
 }

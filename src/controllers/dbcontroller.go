@@ -57,21 +57,60 @@ func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
 	}
 
 	var bondsorders []entities.BondsOrder
-	// _, err := db.DbConnection.Query(&bondsorders, `SELECT * FROM f_bonds_orders`)
-
-	// if err == nil {
-	// 	fmt.Printf("Len: %v \n", len(bondsorders))
-	// 	// fmt.Printf("ORDER: \n %+v \n", bondsorders[0])
-	// }
 
 	rawbo := entities.BondsOrder{}
 	bondsorders = rawbo.UpdateAll(&nodeData)
 
-	fmt.Printf("ORDER: \n %+v \n", bondsorders[0])
+	db.HandleBondsOrdersUpdate(&bondsorders)
+}
 
-	insertErr := db.DbConnection.Insert(&bondsorders[0])
+func (db *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrder) {
+	// fmt.Printf("ORDER: \n %+v \n", freshData[0])
+	var existingRecords []entities.BondsOrder
+
+	_, getRecordsErr := db.DbConnection.Query(&existingRecords, "SELECT * FROM f_bonds_orders;")
+
+	// fmt.Printf("getRecordsErr... %v \n records len: %v \n", getRecordsErr, len(existingRecords))
+	if getRecordsErr != nil {
+		return
+	}
+
+	// Base case when table is empty, just upload and return
+	if len(existingRecords) == 0 {
+		fmt.Printf("0 records exist \n")
+		insertErr := db.DbConnection.Insert(freshData)
+
+		if insertErr != nil {
+			fmt.Printf("Error occured on Insert... %v \n", insertErr)
+		} else {
+			fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
+		}
+
+		return
+	}
+
+	// Case with diff between two data sets
+
+	var recordsToUpdate []entities.BondsOrder;
+	// var recordsToInsert []entities.BondsOrder;
+
+	// isSameLength := len(existingRecords) == len(*freshData)
+	// isNewLonger := len(*freshData) > len(existingRecords)
+
+	for _, newRecord := range *freshData {
+		for _, existingRecord := range existingRecords {
+			if newRecord != existingRecord {
+				recordsToUpdate = append(recordsToUpdate, newRecord)
+				// if isSameLength {
+				// 	continue;
+				// }
+			}
+		}
+	}
+
+	insertErr := db.DbConnection.Update(&recordsToUpdate)
 
 	if insertErr != nil {
-		fmt.Println("error occured", insertErr)
+		fmt.Printf("InsertErr: %v \n", insertErr)
 	}
 }

@@ -9,6 +9,8 @@ import (
 )
 
 type BondsOrder struct {
+	tableName struct{} `pg:"f_bonds_orders"`
+
 	Height, Owner, Status, Index, Pairname, Type, Uuid string
 	Price int
 	Timestamp int64
