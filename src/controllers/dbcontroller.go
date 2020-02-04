@@ -75,8 +75,11 @@ func (db *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 		return
 	}
 
+	isEmpty := len(existingRecords) == 0
+	isNewLonger := len(*freshData) > len(existingRecords)
+
 	// Base case when table is empty, just upload and return
-	if len(existingRecords) == 0 {
+	if isEmpty {
 		fmt.Printf("0 records exist \n")
 		insertErr := db.DbConnection.Insert(freshData)
 
@@ -85,9 +88,28 @@ func (db *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 		} else {
 			fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
 		}
-
-		return
 	} else {
-		db.DbConnection.Update(freshData)
+		if isNewLonger {
+			recordsToAdd := []entities.BondsOrder{}
+			recordsToUpdate := []entities.BondsOrder{}
+			bo := entities.BondsOrder{}
+
+			for _, newRecord := range *freshData {
+				if !bo.Includes(&existingRecords, &newRecord) {
+					recordsToAdd = append(recordsToAdd, newRecord)
+				} else {
+					recordsToUpdate = append(recordsToAdd, newRecord)
+				}
+			}
+
+			db.DbConnection.Update(&recordsToUpdate)
+			_ = db.DbConnection.Insert(&recordsToAdd)
+
+			fmt.Printf("Added %v rows; updated %v rows \n", len(recordsToAdd), len(recordsToUpdate))
+		} else {
+			db.DbConnection.Update(freshData)
+
+			fmt.Printf("Successfully updated %v rows \n", len(*freshData))
+		}
 	}
 }

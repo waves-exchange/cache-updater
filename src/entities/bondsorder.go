@@ -91,6 +91,15 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 
 func (bo *BondsOrder) UpdateItem () {}
 
+func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
+	for _, a := range *s {
+        if a == *e {
+            return true
+        }
+    }
+    return false
+}
+
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
 	height := item["order_height_" + id]
 	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
