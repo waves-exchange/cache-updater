@@ -13,6 +13,7 @@ import (
 
 type DbController struct {
 	UcDelegate *UpdateController
+	DbConnection *pg.DB
 }
 
 func (dbc *DbController) ConnectToDb () {
@@ -31,33 +32,7 @@ func (dbc *DbController) ConnectToDb () {
 		Database: dbdatabase,
 	})
 
-	defer db.Close()
-
-	var bondsorders []entities.NeutrinoOrder
-	_, err := db.Query(&bondsorders, `SELECT * FROM neutrino_orders`)
-
-	fmt.Println(bondsorders[0].GetKeys("1"))
-	
-	rawItem := map[string]string {
-		"order_height_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ": "1868066",
-		"order_owner_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ": "3PGmja5rWBPiQ7n9eLSBgQBd6EzTmUFgddB",
-		"order_price_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ": "55",
-		"order_total_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ": "1434000000",
-		"order_status_zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ": "canceled",
-		"orderbook": "",
-	};
-
-	rawbo := entities.BondsOrder{}
-
-	// fmt.Println("RAW ITEM: ", rawItem)
-	fmt.Printf("RAWBO VALS: %v \n", rawbo.MapItemToModel("zyyXjxzKajKht1wJUGmBrWPcrjRbVbgFRtjQHJEHymJ", rawItem))
-
-	if err != nil {
-		fmt.Println("Error: ", err)
-		return;
-	}
-
-	fmt.Println(bondsorders[len(bondsorders)-1])
+	dbc.DbConnection = db
 }
 
 func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
@@ -81,10 +56,22 @@ func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
 		nodeData[record.Key] = *record.Value;
 	}
 
-	// fmt.Printf("Iteration ended. Example val %v \n", nodeData)
+	var bondsorders []entities.BondsOrder
+	// _, err := db.DbConnection.Query(&bondsorders, `SELECT * FROM f_bonds_orders`)
 
-	bo := entities.BondsOrder{}
-	mappedBondsOrders := bo.UpdateAll(&nodeData)
+	// if err == nil {
+	// 	fmt.Printf("Len: %v \n", len(bondsorders))
+	// 	// fmt.Printf("ORDER: \n %+v \n", bondsorders[0])
+	// }
 
-	
+	rawbo := entities.BondsOrder{}
+	bondsorders = rawbo.UpdateAll(&nodeData)
+
+	fmt.Printf("ORDER: \n %+v \n", bondsorders[0])
+
+	insertErr := db.DbConnection.Insert(&bondsorders[0])
+
+	if insertErr != nil {
+		fmt.Println("error occured", insertErr)
+	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type BondsOrder struct {
-	Height, Owner, Status, Index, Pairname, Type string
+	Height, Owner, Status, Index, Pairname, Type, Uuid string
 	Price int
 	Timestamp int64
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
@@ -45,6 +45,7 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 				continue;
 			}
 		}
+
 		nodeKeys = append(nodeKeys, k)
 	}
 
