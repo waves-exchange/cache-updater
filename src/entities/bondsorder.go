@@ -88,8 +88,6 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 		result = append(result, *mappedModel)
 	}
 
-	fmt.Printf("ParsedVal: %+v \n", result[0])
-
 	return result
 }
 

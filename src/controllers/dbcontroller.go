@@ -87,30 +87,7 @@ func (db *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 		}
 
 		return
-	}
-
-	// Case with diff between two data sets
-
-	var recordsToUpdate []entities.BondsOrder;
-	// var recordsToInsert []entities.BondsOrder;
-
-	// isSameLength := len(existingRecords) == len(*freshData)
-	// isNewLonger := len(*freshData) > len(existingRecords)
-
-	for _, newRecord := range *freshData {
-		for _, existingRecord := range existingRecords {
-			if newRecord != existingRecord {
-				recordsToUpdate = append(recordsToUpdate, newRecord)
-				// if isSameLength {
-				// 	continue;
-				// }
-			}
-		}
-	}
-
-	insertErr := db.DbConnection.Update(&recordsToUpdate)
-
-	if insertErr != nil {
-		fmt.Printf("InsertErr: %v \n", insertErr)
+	} else {
+		db.DbConnection.Update(freshData)
 	}
 }
