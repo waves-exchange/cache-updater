@@ -1,8 +1,9 @@
 package entities;
 
 import (
-	"strconv"
 	"regexp"
+	"strconv"
+
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
@@ -11,7 +12,7 @@ type BondsOrder struct {
 
 	tableName struct{} `pg:"f_bonds_orders"`
 
-	Height, Owner, Status, Index, Pairname, Type, Uuid string
+	Height, Owner, Status, Index, Pairname, Type, Order_id string
 	Price int
 	Timestamp int64
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
@@ -123,6 +124,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	wavesContractPower := float64(constants.WAVES_CONTRACT_POW)
 
 	return &BondsOrder {
+		Order_id: id,
 		Height: height,
 		Price: int(price),
 		Total: float64(total / wavesContractPower),
