@@ -1,14 +1,14 @@
 package controllers;
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/ventuary-lab/cache-updater/src/entities"
+	"os"
+	"strconv"
+
 	"github.com/go-pg/pg/v9"
 	"github.com/joho/godotenv"
-	"os"
-	"encoding/json"
-	"strconv"
-	// "regexp"
+	"github.com/ventuary-lab/cache-updater/src/entities"
 )
 
 type DbController struct {
@@ -16,7 +16,7 @@ type DbController struct {
 	DbConnection *pg.DB
 }
 
-func (dbc *DbController) ConnectToDb () {
+func (this *DbController) ConnectToDb () {
 	envLoadErr := godotenv.Load(".env")
 	if envLoadErr != nil {
 		_ = godotenv.Load(".env.example")
@@ -32,10 +32,10 @@ func (dbc *DbController) ConnectToDb () {
 		Database: dbdatabase,
 	})
 
-	dbc.DbConnection = db
+	this.DbConnection = db
 }
 
-func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
+func (this *DbController) HandleRecordsUpdate (byteValue []byte) {
 	var records []entities.DAppStringRecord;
 	var numberRecords []entities.DAappNumberRecord;
 
@@ -61,14 +61,13 @@ func (db *DbController) HandleRecordsUpdate (byteValue []byte) {
 	rawbo := entities.BondsOrder{}
 	bondsorders = rawbo.UpdateAll(&nodeData)
 
-	db.HandleBondsOrdersUpdate(&bondsorders)
+	this.HandleBondsOrdersUpdate(&bondsorders)
 }
 
-func (db *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrder) {
-	// fmt.Printf("ORDER: \n %+v \n", freshData[0])
+func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrder) {
 	var existingRecords []entities.BondsOrder
 
-	_, getRecordsErr := db.DbConnection.Query(&existingRecords, "SELECT * FROM f_bonds_orders;")
+	_, getRecordsErr := this.DbConnection.Query(&existingRecords, "SELECT * FROM f_bonds_orders;")
 
 	// fmt.Printf("getRecordsErr... %v \n records len: %v \n", getRecordsErr, len(existingRecords))
 	if getRecordsErr != nil {
@@ -81,7 +80,7 @@ func (db *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 	// Base case when table is empty, just upload and return
 	if isEmpty {
 		fmt.Printf("0 records exist \n")
-		insertErr := db.DbConnection.Insert(freshData)
+		insertErr := this.DbConnection.Insert(freshData)
 
 		if insertErr != nil {
 			fmt.Printf("Error occured on Insert... %v \n", insertErr)
@@ -102,12 +101,12 @@ func (db *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 				}
 			}
 
-			db.DbConnection.Update(&recordsToUpdate)
-			_ = db.DbConnection.Insert(&recordsToAdd)
+			this.DbConnection.Update(&recordsToUpdate)
+			_ = this.DbConnection.Insert(&recordsToAdd)
 
 			fmt.Printf("Added %v rows; updated %v rows \n", len(recordsToAdd), len(recordsToUpdate))
 		} else {
-			db.DbConnection.Update(freshData)
+			this.DbConnection.Update(freshData)
 
 			fmt.Printf("Successfully updated %v rows \n", len(*freshData))
 		}

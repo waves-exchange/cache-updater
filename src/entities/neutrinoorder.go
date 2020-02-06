@@ -5,6 +5,10 @@ import (
 )
 
 type NeutrinoOrder struct {
+	DAppEntity
+
+	tableName struct{} `pg:"f_bonds_orders"`
+
 	Height, Currency, Owner, Total, Order_id string
 	Ordernext, Orderprev *string
 	Timestamp int64
@@ -14,7 +18,9 @@ type NeutrinoOrder struct {
 	Isfirst, Islast bool
 }
 
-func (no NeutrinoOrder) GetKeys(id string) []string {
+func (no NeutrinoOrder) GetKeys(regex *string) []string {
+	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
+
 	return []string {
 		"order_height_" + id,
 		"order_owner_" + id,
@@ -28,3 +34,4 @@ func (no NeutrinoOrder) GetKeys(id string) []string {
 		"order_last",
 	}
 }
+

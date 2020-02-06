@@ -26,7 +26,7 @@ func init() {
 				pairname text,
 				type text,
 				uuid uuid,	   
-			)`
+			)`,
 		)
 		return err
 	}, func(db migrations.DB) error {

@@ -11,7 +11,7 @@ type UpdateController struct {
 	DbDelegate *DbController
 }
 
-func (uc *UpdateController) UpdateAllData () {
+func (this *UpdateController) UpdateAllData () {
 	dAppAddress := os.Getenv("DAPP_ADDRESS")
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := nodeUrl + "/addresses/data/" + dAppAddress
@@ -26,5 +26,5 @@ func (uc *UpdateController) UpdateAllData () {
 
 	byteValue, _ := ioutil.ReadAll(response.Body)
 
-	uc.DbDelegate.HandleRecordsUpdate(byteValue)
+	this.DbDelegate.HandleRecordsUpdate(byteValue)
 }

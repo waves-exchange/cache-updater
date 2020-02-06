@@ -7,6 +7,8 @@ import (
 )
 
 type BondsOrder struct {
+	DAppEntity
+
 	tableName struct{} `pg:"f_bonds_orders"`
 
 	Height, Owner, Status, Index, Pairname, Type, Uuid string
@@ -15,7 +17,9 @@ type BondsOrder struct {
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
-func (bo *BondsOrder) GetKeys(id string) []string {
+func (bo *BondsOrder) GetKeys(regex *string) []string {
+	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
+
 	return []string {
 		"order_height_" + id,
 		"order_owner_" + id,
@@ -27,11 +31,10 @@ func (bo *BondsOrder) GetKeys(id string) []string {
 	}
 }
 
-func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
+func (this *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 	ids := []string{}
 	result := []BondsOrder{}
-	defaultRawRegex := "([A-Za-z0-9]{40,50})"
-	regexKeys := bo.GetKeys(defaultRawRegex)
+	regexKeys := this.GetKeys(nil)
 	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
 	nodeKeys := []string{}
@@ -63,7 +66,7 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 
 			resolveData[matchedAddress] = map[string]string{}
 
-			validKeys := bo.GetKeys(matchedAddress)
+			validKeys := this.GetKeys(&matchedAddress)
 
 			for _, validKey := range validKeys {
 				for _, k := range nodeKeys {
