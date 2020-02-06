@@ -3,7 +3,7 @@ package entities;
 import (
 	"regexp"
 	"strconv"
-
+	"fmt"
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
@@ -97,7 +97,8 @@ func (bo *BondsOrder) UpdateItem () {}
 
 func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
 	for _, a := range *s {
-        if a == *e {
+		fmt.Printf("A: %+v; \nE: %+v \n", a, *e)
+		if a == *e {
             return true
         }
     }

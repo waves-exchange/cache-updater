@@ -69,13 +69,11 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 
 	_, getRecordsErr := this.DbConnection.Query(&existingRecords, "SELECT * FROM f_bonds_orders;")
 
-	// fmt.Printf("getRecordsErr... %v \n records len: %v \n", getRecordsErr, len(existingRecords))
 	if getRecordsErr != nil {
 		return
 	}
 
 	isEmpty := len(existingRecords) == 0
-	isNewLonger := len(*freshData) > len(existingRecords)
 
 	// Base case when table is empty, just upload and return
 	if isEmpty {
@@ -88,27 +86,31 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 			fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
 		}
 	} else {
-		if isNewLonger {
-			recordsToAdd := []entities.BondsOrder{}
-			recordsToUpdate := []entities.BondsOrder{}
-			bo := entities.BondsOrder{}
-
-			for _, newRecord := range *freshData {
-				if !bo.Includes(&existingRecords, &newRecord) {
-					recordsToAdd = append(recordsToAdd, newRecord)
-				} else {
-					recordsToUpdate = append(recordsToAdd, newRecord)
+		var recordsToAdd []entities.BondsOrder
+		var recordsToUpdate []entities.BondsOrder
+		
+		for _, newRecord := range *freshData {
+			exists := false
+			for _, oldRecord := range existingRecords {
+				if newRecord.Order_id == oldRecord.Order_id && (
+					newRecord.Status != oldRecord.Status || newRecord.Filledamount != oldRecord.Filledamount) {
+					recordsToUpdate = append(recordsToUpdate, newRecord)
+					exists = true
+				} else if newRecord.Order_id == oldRecord.Order_id {
+					exists = true
+					break
 				}
 			}
 
-			this.DbConnection.Update(&recordsToUpdate)
-			_ = this.DbConnection.Insert(&recordsToAdd)
-
-			fmt.Printf("Added %v rows; updated %v rows \n", len(recordsToAdd), len(recordsToUpdate))
-		} else {
-			this.DbConnection.Update(freshData)
-
-			fmt.Printf("Successfully updated %v rows \n", len(*freshData))
+			if !exists {
+				recordsToAdd = append(recordsToAdd, newRecord)
+			}
 		}
+
+		this.DbConnection.Update(&recordsToUpdate)
+		this.DbConnection.Insert(&recordsToAdd)
+
+		fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), len(recordsToUpdate))
 	}
 }
+
