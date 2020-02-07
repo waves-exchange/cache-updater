@@ -131,6 +131,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	for orderbookindex, orderbookpos := range orderbook {
 		if orderbookpos == id {
 			index = &orderbookindex
+			break
 		}
 	}
 

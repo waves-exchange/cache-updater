@@ -93,7 +93,9 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 			exists := false
 			for _, oldRecord := range existingRecords {
 				if newRecord.Order_id == oldRecord.Order_id && (
-					newRecord.Status != oldRecord.Status || newRecord.Filledamount != oldRecord.Filledamount) {
+					newRecord.Status != oldRecord.Status ||
+					newRecord.Index != oldRecord.Index ||
+					newRecord.Filledamount != oldRecord.Filledamount) {
 					updateErr := this.DbConnection.Update(&newRecord)
 
 					if updateErr != nil {
