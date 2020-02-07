@@ -87,18 +87,21 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 		}
 	} else {
 		var recordsToAdd []entities.BondsOrder
-		var recordsToUpdate []entities.BondsOrder
+		updatedRecordsCount := 0
 		
 		for _, newRecord := range *freshData {
 			exists := false
 			for _, oldRecord := range existingRecords {
 				if newRecord.Order_id == oldRecord.Order_id && (
 					newRecord.Status != oldRecord.Status || newRecord.Filledamount != oldRecord.Filledamount) {
-					if newRecord.Order_id == "ENXG2QxpdiYHGz7ojhYgwr3hVWjfQBpkikK8G86nzg3s" {
-						fmt.Printf("Catched that, %v \n", newRecord)
+					updateErr := this.DbConnection.Update(&newRecord)
+
+					if updateErr != nil {
+						fmt.Printf("Error occured on update... %v \n", updateErr)       
+					} else {
+						updatedRecordsCount++
 					}
 
-					recordsToUpdate = append(recordsToUpdate, newRecord)
 					exists = true
 				} else if newRecord.Order_id == oldRecord.Order_id {
 					exists = true
@@ -111,18 +114,9 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 			}
 		}
 
-		
 		this.DbConnection.Insert(&recordsToAdd)
-		
-		if len(recordsToUpdate) > 0 {
-			updateErr := this.DbConnection.Update(&recordsToUpdate)
 
-			if updateErr != nil {
-				fmt.Printf("Update err occured... %v \n", updateErr)
-			}
-		}
-
-		fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), len(recordsToUpdate))
+		fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), updatedRecordsCount)
 	}
 }
 
