@@ -12,7 +12,8 @@ type BondsOrder struct {
 
 	tableName struct{} `pg:"f_bonds_orders"`
 
-	Height, Owner, Status, Index, Pairname, Type, Order_id string
+	Order_id string `pg:",pk"` 
+	Height, Owner, Status, Index, Pairname, Type string
 	Price int
 	Timestamp int64
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
