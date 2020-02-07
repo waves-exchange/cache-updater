@@ -151,7 +151,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Amount: total / (float64(price) * wavesContractPower / 100),
 		Filledamount: filledtotal / (float64(price) * wavesContractPower / 100),
 		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / 100),
-		Pairname: "usdn-usdnb",
+		Pairname: "usd-nb_usd-n",
 		Type: "buy",
 	}
 }
