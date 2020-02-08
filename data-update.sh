@@ -15,6 +15,7 @@ raw_update_data () {
 }
 
 run_go_migrations () {
+    go run src/migrations/*.go down
     go run src/migrations/*.go up
 }
 

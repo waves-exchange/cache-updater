@@ -2,11 +2,11 @@ package main;
 
 import (
 	"fmt"
-
+	"github.com/ventuary-lab/cache-updater/src/entities"
 	"github.com/go-pg/migrations/v7"
 )
 
-const TABLE_NAME = "f_bonds_orders"
+const TABLE_NAME = entities.BONDS_ORDERS_NAME
 
 func init () {
 	migrations.MustRegisterTx(

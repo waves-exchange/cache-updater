@@ -9,6 +9,8 @@ import (
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
+const BONDS_ORDERS_NAME = "f_bonds_orders"
+
 type BondsOrder struct {
 	DAppEntity
 

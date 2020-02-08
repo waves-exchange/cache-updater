@@ -7,7 +7,7 @@ import (
 type NeutrinoOrder struct {
 	DAppEntity
 
-	tableName struct{} `pg:"f_bonds_orders"`
+	tableName struct{} `pg:"f_neutrino_orders"`
 
 	Height, Currency, Owner, Total, Order_id string
 	Ordernext, Orderprev *string

@@ -58,7 +58,8 @@ func (this *DbController) HandleRecordsUpdate (byteValue []byte) {
 func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrder) {
 	var existingRecords []entities.BondsOrder
 
-	_, getRecordsErr := this.DbConnection.Query(&existingRecords, "SELECT * FROM f_bonds_orders;")
+	_, getRecordsErr := this.DbConnection.
+		Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v;", entities.BONDS_ORDERS_NAME))
 
 	if getRecordsErr != nil {
 		return
