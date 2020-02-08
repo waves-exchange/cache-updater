@@ -14,8 +14,15 @@ raw_update_data () {
     curl -X GET --header 'Accept: application/json' "$node_url/$address" > "$save_endpoint"
 }
 
+run_go_migrations () {
+    go run src/migrations/*.go up
+}
+
 run_go_build () {
-    go build && ./cache-updater
+    go build
+    run_go_migrations
+
+    ./cache-updater
 }
 
 run_go_build_recursively () {
@@ -28,7 +35,6 @@ run_go_build_recursively () {
 }
 
 main () {
-    # run_go_build
     args=$@
 
     while [ -n "$1" ]
@@ -39,7 +45,7 @@ main () {
         shift;
     done
 
-    go build
+    run_go_build
     run_go_build_recursively
 }
 

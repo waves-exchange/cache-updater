@@ -3,11 +3,9 @@ package controllers;
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/go-pg/pg/v9"
-	"github.com/joho/godotenv"
 	"github.com/ventuary-lab/cache-updater/src/entities"
 )
 
@@ -17,14 +15,7 @@ type DbController struct {
 }
 
 func (this *DbController) ConnectToDb () {
-	envLoadErr := godotenv.Load(".env")
-	if envLoadErr != nil {
-		_ = godotenv.Load(".env.example")
-	}
-
-	dbuser := os.Getenv("DB_USERNAME");
-	dbpass := os.Getenv("DB_PASS");
-	dbdatabase := os.Getenv("DB_NAME");
+	dbuser, dbpass, dbdatabase := entities.GetDBCredentials()
   
 	db := pg.Connect(&pg.Options{
 		User:     dbuser,
