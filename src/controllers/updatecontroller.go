@@ -2,8 +2,8 @@ package controllers;
 
 import (
 	"fmt"
-	"net/http"
 	"io/ioutil"
+	"net/http"
 	"os"
 )
 

@@ -17,14 +17,14 @@ type BondsOrder struct {
 	tableName struct{} `pg:"f_bonds_orders"`
 
 	Order_id string `pg:",pk"` 
-	Height, Owner, Status, Pairname, Type string
+	Owner, Status, Pairname, Type string
 	Index *int
 	Price int
-	Timestamp int64
+	Timestamp, Height uint64
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
-func (bo *BondsOrder) GetKeys(regex *string) []string {
+func (this *BondsOrder) GetKeys(regex *string) []string {
 	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
 
 	return []string {
@@ -112,7 +112,7 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
 }
 
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
-	height := item["order_height_" + id]
+	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
 	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
 	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
 	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filled_total_" + id], 64)
@@ -141,7 +141,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 
 	return &BondsOrder {
 		Order_id: id,
-		Height: height,
+		Height: uint64(height),
 		Price: int(price),
 		Total: float64(total / wavesContractPower),
 		Filledtotal: float64(filledtotal / wavesContractPower),

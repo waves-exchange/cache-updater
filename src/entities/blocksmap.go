@@ -1,0 +1,39 @@
+package entities
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+)
+
+const BLOCKS_MAP_NAME = "blocks_map"
+
+type BlocksMap struct {
+	tableName struct{} `pg:"blocks_map"`
+
+	Height, Timestamp uint64
+}
+
+func (this *BlocksMap) GetBlocksMapByHeight (height string) *BlocksMap {
+	// http://nodes.wavesplatform.com/blocks/at/77777
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := nodeUrl + "/blocks/at/" + height
+	response, err := http.Get(connectionUrl)
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+	}
+
+	defer response.Body.Close()
+	
+	byteValue, _ := ioutil.ReadAll(response.Body)
+
+	var blocksMap BlocksMap
+	json.Unmarshal([]byte(byteValue), &blocksMap)
+
+	// fmt.Printf("blocksMap: %v \n", blocksMap)
+
+	return &blocksMap
+}

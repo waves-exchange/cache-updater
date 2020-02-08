@@ -9,7 +9,7 @@ import (
 
 
 func init () {
-	const TABLE_NAME = entities.BONDS_ORDERS_NAME
+	const TABLE_NAME = entities.BLOCKS_MAP_NAME
 
 	migrations.MustRegisterTx(
 		func(db migrations.DB) error {
@@ -17,20 +17,7 @@ func init () {
 			_, err := db.Exec(fmt.Sprintf(
 				`CREATE TABLE %[1]v (
 					height bigint,
-					timestamp bigint,
-					owner text,
-					price int,
-					total float8,
-					filledtotal float8,
-					resttotal float8,
-					status text,
-					index text,
-					amount float8,
-					filledamount float8,
-					restamount float8,
-					pairname text,
-					type text,
-					order_id text PRIMARY KEY
+					timestamp bigint PRIMARY KEY
 				);
 				`, TABLE_NAME))
 			return err
