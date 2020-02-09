@@ -7,6 +7,7 @@ save_endpoint="scriptdata.test.json"
 
 # script params
 update_freq=5s
+redo_migrate=0
 log_file=pg_update_logs.txt
 current_pid=?
 
@@ -15,13 +16,16 @@ raw_update_data () {
 }
 
 run_go_migrations () {
-    go run src/migrations/*.go down
+    go run src/migrations/*.go reset
     go run src/migrations/*.go up
 }
 
 run_go_build () {
     go build
-    run_go_migrations
+    if [ $redo_migrate -eq 1 ]
+    then
+        run_go_migrations
+    fi
 
     ./cache-updater
 }
@@ -42,6 +46,7 @@ main () {
     do
         case "$1" in
             --frequency) update_freq=$2 ;;
+            --redo-migration) redo_migrate=1 ;;
         esac
         shift;
     done

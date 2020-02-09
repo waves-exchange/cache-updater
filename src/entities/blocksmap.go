@@ -24,6 +24,7 @@ func (this *BlocksMap) GetBlocksMapByHeight (height string) *BlocksMap {
 
 	if err != nil {
 		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &BlocksMap{}
 	}
 
 	defer response.Body.Close()
@@ -33,7 +34,25 @@ func (this *BlocksMap) GetBlocksMapByHeight (height string) *BlocksMap {
 	var blocksMap BlocksMap
 	json.Unmarshal([]byte(byteValue), &blocksMap)
 
-	// fmt.Printf("blocksMap: %v \n", blocksMap)
-
 	return &blocksMap
+}
+
+func (this *BlocksMap) GetBlocksMapSequenceByRange (heightMin, heightMax string) *[]BlocksMap {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
+	response, err := http.Get(connectionUrl)
+
+	var blocksMapArray []BlocksMap
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &blocksMapArray
+	}
+
+	defer response.Body.Close()
+
+	byteValue, _ := ioutil.ReadAll(response.Body)
+	json.Unmarshal([]byte(byteValue), &blocksMapArray)
+
+	return &blocksMapArray
 }
