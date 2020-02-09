@@ -16,8 +16,8 @@ func init () {
 			fmt.Printf("creating %v table...\n", TABLE_NAME)
 			_, err := db.Exec(fmt.Sprintf(
 				`CREATE TABLE %[1]v (
-					height bigint,
-					timestamp bigint PRIMARY KEY
+					height bigint PRIMARY KEY,
+					timestamp bigint
 				);
 				`, TABLE_NAME))
 			return err
