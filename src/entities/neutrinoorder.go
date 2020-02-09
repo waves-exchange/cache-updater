@@ -9,16 +9,16 @@ type NeutrinoOrder struct {
 
 	tableName struct{} `pg:"f_neutrino_orders"`
 
-	Height, Currency, Owner, Total, Order_id string
+	Currency, Owner, Status, Type, Order_id string
+	Height uint64
 	Ordernext, Orderprev *string
-	Timestamp int64
-	Status enums.OrderStatusEnum
-	Resttotal int
-	Type enums.OrderTypeEnum
+	Resttotal, Total int64
+	// Status enums.OrderStatusEnum
+	// Type enums.OrderTypeEnum
 	Isfirst, Islast bool
 }
 
-func (no NeutrinoOrder) GetKeys(regex *string) []string {
+func (this *NeutrinoOrder) GetKeys(regex *string) []string {
 	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
 
 	return []string {
@@ -35,3 +35,61 @@ func (no NeutrinoOrder) GetKeys(regex *string) []string {
 	}
 }
 
+func (this *NeutrinoOrder) MapItemToModel (id string, item map[string]string) *NeutrinoOrder {
+	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
+	owner := item["order_owner_" + id]
+	status := item["order_status_" + id]
+	orderNext := item["order_next_" + id]
+	orderPrev := item["order_prev_" + id]
+	total, totalErr := strconv.ParseInt(item["order_total_" + id], 10, 64)
+	filledtotal, filledTotalErr := strconv.ParseInt(item["order_filled_total_" + id, 10, 64)
+	currency := "usd-nb"
+	orderType := "liquidate"
+
+	if totalErr != nil {
+		total = 0
+	}
+	if filledTotalErr != nil {
+		filledtotal = 0
+	}
+	if orderNext == "" {
+		orderNext = nil
+	}
+	if orderPrev == "" {
+		orderPrev = nil
+	}
+
+	return &NeutrinoOrder{
+		Height: height,
+		Currency: currency,
+		Owner: owner,
+		Total: total,
+		Resttotal: total - filledTotal,
+		Type: orderType,
+		OrderNext: orderNext,
+		OrderPrev: orderPrev,
+		IsFirst: id == item["order_first"],
+		IsLast: id == item["order_last"]
+	}
+}
+
+// const orderNext = item['order_next_' + id] || null;
+// const orderPrev = item['order_prev_' + id] || null;
+
+// const height = item['order_height_' + id];
+// const total = item['order_total_' + id] || 0;
+// const filledTotal = item['order_filled_total_' + id] || 0;
+// return {
+// 	height,
+// 	currency: this.pairName.split('_')[0],
+// 	timestamp: (await this.heightListener.getTimestamps([height]))[height],
+// 	owner: item['order_owner_' + id],
+// 	status: item['order_status_' + id],
+// 	total,
+// 	restTotal: total - filledTotal,
+// 	type: OrderTypeEnum.LIQUIDATE,
+// 	orderNext,
+// 	orderPrev,
+// 	isFirst: id == item.order_first,
+// 	isLast: id == item.order_last,
+// };

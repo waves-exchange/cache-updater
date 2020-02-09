@@ -20,7 +20,7 @@ type BondsOrder struct {
 	Owner, Status, Pairname, Type string
 	Index *int
 	Price int
-	Timestamp, Height uint64
+	Height uint64
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
@@ -145,7 +145,6 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Price: int(price),
 		Total: float64(total / wavesContractPower),
 		Filledtotal: float64(filledtotal / wavesContractPower),
-		Timestamp: 1111, // TODO
 		Index: index,
 		Owner: item["order_owner_" + id],
 		Resttotal: (total - filledtotal) / wavesContractPower,

@@ -24,7 +24,7 @@ func init () {
 					filledtotal float8,
 					resttotal float8,
 					status text,
-					index text,
+					index int,
 					amount float8,
 					filledamount float8,
 					restamount float8,
