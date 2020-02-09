@@ -53,6 +53,7 @@ func (this *DbController) HandleRecordsUpdate (byteValue []byte) {
 	rawbo := entities.BondsOrder{}
 	bondsorders = rawbo.UpdateAll(&nodeData)
 
+	
 	this.HandleBondsOrdersUpdate(&bondsorders)
 
 	for _, order := range bondsorders {
