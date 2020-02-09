@@ -153,13 +153,14 @@ func (this *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	bm := entities.BlocksMap{}
 
 	if len(existingRecords) > 0 {
-		minExRecord := existingRecords[0]
-		minHeightBm = entities.BondsOrder{ Height: minExRecord.Height, Timestamp: minExRecord.Timestamp }
+		minExRecord := existingRecords[len(existingRecords) - 1]
+		minHeightBm = entities.BondsOrder{ Height: minExRecord.Height + 1, Timestamp: minExRecord.Timestamp }
 	}
 
 	minHeight := minHeightBm.Height
 	maxHeight := minHeightBm.Height + maxRecordsCount
 	index := 1
+	iterationsLimitPerUpdate := 15
 
 	for {
 		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
@@ -177,9 +178,13 @@ func (this *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 		}
 
 		index++
+
+		if index == iterationsLimitPerUpdate {
+			break
+		}
 	}
 
-	fmt.Printf("blocks count: %v", len(freshData))
+	fmt.Printf("blocks count: %v \n", len(freshData))
 	insertErr := this.DbConnection.Insert(&freshData)
 
 	if insertErr != nil {
