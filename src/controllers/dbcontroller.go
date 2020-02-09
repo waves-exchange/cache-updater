@@ -131,9 +131,9 @@ func (this *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	var bondsOrders []entities.BondsOrder
 
 	_, getRecordsErr := this.DbConnection.
-		Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v;", entities.BLOCKS_MAP_NAME))
+		Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v ORDER BY height ASC;", entities.BLOCKS_MAP_NAME))
 	_, getBondsOrdersErr := this.DbConnection.
-		Query(&bondsOrders, fmt.Sprintf("SELECT height FROM %v GROUP BY height ORDER BY height DESC;", entities.BONDS_ORDERS_NAME))
+		Query(&bondsOrders, fmt.Sprintf("SELECT height FROM %v GROUP BY height ORDER BY height ASC;", entities.BONDS_ORDERS_NAME))
 
 	if getRecordsErr != nil || getBondsOrdersErr != nil {
 		fmt.Printf("Error occured on Query Select... %v; %v \n", getRecordsErr, getBondsOrdersErr)
@@ -145,48 +145,46 @@ func (this *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 		return
 	}
 
+	var freshData []entities.BlocksMap
+
+	minHeightBm := bondsOrders[0]
+	maxHeightBm := bondsOrders[len(bondsOrders) - 1]
+	maxRecordsCount := uint64(99)
 	bm := entities.BlocksMap{}
 
-	if len(existingRecords) == 0 {
-		var freshData []entities.BlocksMap
+	if len(existingRecords) > 0 {
+		minExRecord := existingRecords[0]
+		minHeightBm = entities.BondsOrder{ Height: minExRecord.Height, Timestamp: minExRecord.Timestamp }
+	}
 
-		minHeightBm := bondsOrders[0]
-		maxHeightBm := bondsOrders[len(bondsOrders) - 1]
-		maxRecordsCount := uint64(99)
+	minHeight := minHeightBm.Height
+	maxHeight := minHeightBm.Height + maxRecordsCount
+	index := 1
 
-		// GetBlocksMapSequenceByRange
-		minHeight := minHeightBm.Height
-		maxHeight := minHeightBm.Height + maxRecordsCount
-		index := 1
+	for {
+		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
+		fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
 
-		for {
-			fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
+		freshData = append(freshData, *fetchedBlocksMap...)
+		minHeight = maxHeight + 1
+		maxHeight = maxHeight + maxRecordsCount + 1
 
-			freshData = append(freshData, *fetchedBlocksMap...)
-			minHeight := maxHeight + 1
-			maxHeight := minHeight + maxRecordsCount
-
-			if maxHeight == maxHeightBm.Height {
-				break
-			}
-			if maxHeight > maxHeightBm.Height {
-				maxHeight = maxHeightBm.Height
-			}
-
-			index++
-
-			if index == 3 {
-				break
-			}
+		if maxHeight == maxHeightBm.Height {
+			break
+		}
+		if maxHeight > maxHeightBm.Height {
+			maxHeight = maxHeightBm.Height
 		}
 
-		fmt.Printf("blocks count: %v", len(freshData))
-		insertErr := this.DbConnection.Insert(&freshData)
+		index++
+	}
 
-		if insertErr != nil {
-			fmt.Printf("Error occured on Insert... %v \n", insertErr)
-		} else {
-			fmt.Printf("Successfully inserted %v rows \n", len(freshData))
-		}
+	fmt.Printf("blocks count: %v", len(freshData))
+	insertErr := this.DbConnection.Insert(&freshData)
+
+	if insertErr != nil {
+		fmt.Printf("Error occured on Insert... %v \n", insertErr)
+	} else {
+		fmt.Printf("Successfully inserted %v rows \n", len(freshData))
 	}
 }
