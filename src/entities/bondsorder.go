@@ -3,6 +3,7 @@ package entities;
 import (
 	"fmt"
 	"regexp"
+
 	// "regexp"
 	"strconv"
 	"strings"
@@ -17,7 +18,7 @@ type BondsOrder struct {
 
 	tableName struct{} `pg:"f_bonds_orders"`
 
-	Order_id string `pg:",pk"` 
+	OrderId string `pg:"order_id,pk"`
 	Owner, Status, Pairname, Type string
 	Index *int
 	Price int
@@ -25,7 +26,7 @@ type BondsOrder struct {
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
-func (this *BondsOrder) GetKeys(regex *string) []string {
+func (bo *BondsOrder) GetKeys(regex *string) []string {
 	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
 
 	return []string {
@@ -39,10 +40,10 @@ func (this *BondsOrder) GetKeys(regex *string) []string {
 	}
 }
 
-func (this *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
+func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 	ids := []string{}
 	result := []BondsOrder{}
-	regexKeys := this.GetKeys(nil)
+	regexKeys := bo.GetKeys(nil)
 	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
 	nodeKeys := []string{}
@@ -71,7 +72,7 @@ func (this *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 		if matchedAddress != "" {
 			ids = append(ids, matchedAddress)
 			resolveData[matchedAddress] = map[string]string{}
-			validKeys := this.GetKeys(&matchedAddress)
+			validKeys := bo.GetKeys(&matchedAddress)
 
 			for _, validKey := range validKeys {
 				for _, k := range nodeKeys {
@@ -138,7 +139,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	wavesContractPower := float64(constants.WAVES_CONTRACT_POW)
 
 	return &BondsOrder {
-		Order_id: id,
+		OrderId: id,
 		Height: uint64(height),
 		Price: int(price),
 		Total: float64(total / wavesContractPower),

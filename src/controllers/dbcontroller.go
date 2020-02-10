@@ -91,7 +91,7 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 		for _, newRecord := range *freshData {
 			exists := false
 			for _, oldRecord := range existingRecords {
-				if newRecord.Order_id == oldRecord.Order_id && (
+				if newRecord.OrderId == oldRecord.OrderId && (
 					newRecord.Status != oldRecord.Status ||
 					newRecord.Index != oldRecord.Index ||
 					newRecord.Filledamount != oldRecord.Filledamount) {
@@ -104,7 +104,7 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 					}
 
 					exists = true
-				} else if newRecord.Order_id == oldRecord.Order_id {
+				} else if newRecord.OrderId == oldRecord.OrderId {
 					exists = true
 					break
 				}

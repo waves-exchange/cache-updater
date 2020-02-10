@@ -19,7 +19,7 @@ type NeutrinoOrder struct {
 	Isfirst, Islast bool
 }
 
-func (this *NeutrinoOrder) GetKeys(regex *string) []string {
+func (no *NeutrinoOrder) GetKeys(regex *string) []string {
 	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
 
 	return []string {
@@ -36,7 +36,7 @@ func (this *NeutrinoOrder) GetKeys(regex *string) []string {
 	}
 }
 
-func (this *NeutrinoOrder) MapItemToModel (id string, item map[string]string) *NeutrinoOrder {
+func (no *NeutrinoOrder) MapItemToModel (id string, item map[string]string) *NeutrinoOrder {
 	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
 	owner := item["order_owner_" + id]
 	status := item["order_status_" + id]

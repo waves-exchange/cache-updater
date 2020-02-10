@@ -38,9 +38,9 @@ func GetDBCredentials () (string, string, string) {
 		_ = godotenv.Load(".env.example")
 	}
 
-	dbuser := os.Getenv("DB_USERNAME");
-	dbpass := os.Getenv("DB_PASS");
-	dbdatabase := os.Getenv("DB_NAME");
+	dbuser := os.Getenv("DB_USERNAME")
+	dbpass := os.Getenv("DB_PASS")
+	dbdatabase := os.Getenv("DB_NAME")
 
 	return dbuser, dbpass, dbdatabase
 }

@@ -16,7 +16,7 @@ type BlocksMap struct {
 	Height, Timestamp uint64
 }
 
-func (this *BlocksMap) GetBlocksMapByHeight (height string) *BlocksMap {
+func (bm *BlocksMap) GetBlocksMapByHeight (height string) *BlocksMap {
 	// http://nodes.wavesplatform.com/blocks/at/77777
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := nodeUrl + "/blocks/at/" + height
@@ -37,7 +37,7 @@ func (this *BlocksMap) GetBlocksMapByHeight (height string) *BlocksMap {
 	return &blocksMap
 }
 
-func (this *BlocksMap) GetBlocksMapSequenceByRange (heightMin, heightMax string) *[]BlocksMap {
+func (bm *BlocksMap) GetBlocksMapSequenceByRange (heightMin, heightMax string) *[]BlocksMap {
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
 	response, err := http.Get(connectionUrl)
