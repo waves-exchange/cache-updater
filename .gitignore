@@ -5,3 +5,4 @@ cache-updater
 *.test.json
 pg_update_logs.txt
 test.sh
+.env

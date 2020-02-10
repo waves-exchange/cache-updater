@@ -41,6 +41,7 @@ run_go_build_recursively () {
 
 main () {
     args=$@
+    source ~/.bash_profile
 
     while [ -n "$1" ]
     do
