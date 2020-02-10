@@ -6,11 +6,6 @@
 service_name="neutrino-cache-daemon"
 daemon_fl="data-update.sh"
 
-if [ -n "$1" ]
-then
-  service_name=$1
-fi
-
 build_only () {
   file="$service_name.service"
   echo "
@@ -18,12 +13,13 @@ build_only () {
     Description=Neutrino cache update daemon
 
     [Service]
-    ExecStart=$pwd/$daemon_fl
+    ExecStart=$PWD/$daemon_fl
     Restart=on-failure
+    RestartSec=3
 
     [Install]
     WantedBy=multi-user.target
-  "
+  " > "$file"
 
   mv "$file" /etc/systemd/system/
 }
@@ -33,7 +29,7 @@ build_n_start () {
   start_service
 }
 start_service () {
-  systemctl start "$service_name.service"
+  systemctl start "$service_name"
 }
 
 main () {
@@ -43,7 +39,11 @@ main () {
       --build-only ) build_only ;;
       --build-n-start ) build_n_start ;;
       --start ) start_service ;;
+      --script ) daemon_fl=$2 ;;
+      --service ) service_name=$2 ;;
     esac
     shift
   done
 }
+
+main $@

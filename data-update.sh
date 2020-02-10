@@ -1,4 +1,4 @@
-# !/usr/bin/bash
+#!/bin/bash
 
 # inner variables
 address="3PG2vMhK5CPqsCDodvLGzQ84QkoHXCJ3oNP"
@@ -55,4 +55,4 @@ main () {
     run_go_build_recursively
 }
 
-main $@
+main "$@"
