@@ -1,4 +1,4 @@
-# !/usr/sh
+#!/usr/sh
 
 # /etc/systemd/system/mydaemon.service
 
