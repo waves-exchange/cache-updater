@@ -8,7 +8,7 @@ save_endpoint="scriptdata.test.json"
 # script params
 update_freq=5s
 redo_migrate=0
-log_file=pg_update_logs.txt
+log_file=/var/www/pg_update_logs.txt
 current_pid=?
 
 raw_update_data () {
@@ -47,9 +47,12 @@ main () {
         case "$1" in
             --frequency) update_freq=$2 ;;
             --redo-migration) redo_migrate=1 ;;
+            --pwd ) PWD=$2 ;;
         esac
         shift;
     done
+
+    cd $PWD
 
     run_go_build
     run_go_build_recursively

@@ -13,7 +13,7 @@ build_only () {
     Description=Neutrino cache update daemon
 
     [Service]
-    ExecStart=$PWD/$daemon_fl
+    ExecStart=$PWD/$daemon_fl --pwd $PWD
     Restart=on-failure
     RestartSec=3
 
