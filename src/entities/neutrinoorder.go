@@ -1,7 +1,8 @@
 package entities;
 
 import (
-	"github.com/ventuary-lab/cache-updater/enums"
+	"strconv"
+	// "github.com/ventuary-lab/cache-updater/enums"
 )
 
 type NeutrinoOrder struct {
@@ -9,7 +10,7 @@ type NeutrinoOrder struct {
 
 	tableName struct{} `pg:"f_neutrino_orders"`
 
-	Currency, Owner, Status, Type, Order_id string
+	Currency, Owner, status, Type, Order_id string
 	Height uint64
 	Ordernext, Orderprev *string
 	Resttotal, Total int64
@@ -39,36 +40,35 @@ func (this *NeutrinoOrder) MapItemToModel (id string, item map[string]string) *N
 	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
 	owner := item["order_owner_" + id]
 	status := item["order_status_" + id]
-	orderNext := item["order_next_" + id]
-	orderPrev := item["order_prev_" + id]
 	total, totalErr := strconv.ParseInt(item["order_total_" + id], 10, 64)
-	filledtotal, filledTotalErr := strconv.ParseInt(item["order_filled_total_" + id, 10, 64)
+	filledtotal, filledtotalErr := strconv.ParseInt(item["order_filled_total_" + id], 10, 64)
 	currency := "usd-nb"
 	orderType := "liquidate"
-
+	
 	if totalErr != nil {
 		total = 0
 	}
-	if filledTotalErr != nil {
+	if filledtotalErr != nil {
 		filledtotal = 0
 	}
-	if orderNext == "" {
-		orderNext = nil
-	}
-	if orderPrev == "" {
-		orderPrev = nil
-	}
+
+	rawOrderNext := item["order_next_" + id]
+	rawOrderPrev := item["order_prev_" + id]
+	var orderNext, orderPrev *string
+	if rawOrderNext == "" { orderNext = nil } else { orderNext = &rawOrderNext }
+	if rawOrderPrev == "" { orderPrev = nil } else { orderPrev = &rawOrderPrev }
 
 	return &NeutrinoOrder{
-		Height: height,
+		Height: uint64(height),
 		Currency: currency,
 		Owner: owner,
 		Total: total,
-		Resttotal: total - filledTotal,
+		status: status,
+		Resttotal: total - filledtotal,
 		Type: orderType,
-		OrderNext: orderNext,
-		OrderPrev: orderPrev,
-		IsFirst: id == item["order_first"],
-		IsLast: id == item["order_last"]
+		Ordernext: orderNext,
+		Orderprev: orderPrev,
+		Isfirst: id == item["order_first"],
+		Islast: id == item["order_last"],
 	}
 }

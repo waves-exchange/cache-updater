@@ -1,4 +1,4 @@
-package controllers;
+package controllers
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ type UpdateController struct {
 	DbDelegate *DbController
 }
 
-func (this *UpdateController) UpdateAllData () {
+func (uc *UpdateController) UpdateAllData () {
 	dAppAddress := os.Getenv("DAPP_ADDRESS")
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := nodeUrl + "/addresses/data/" + dAppAddress
@@ -26,5 +26,5 @@ func (this *UpdateController) UpdateAllData () {
 
 	byteValue, _ := ioutil.ReadAll(response.Body)
 
-	this.DbDelegate.HandleRecordsUpdate(byteValue)
+	uc.DbDelegate.HandleRecordsUpdate(byteValue)
 }

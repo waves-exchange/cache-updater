@@ -1,12 +1,11 @@
-package controllers;
+package controllers
 
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/src/entities"
+	"strconv"
 )
 
 type DbController struct {
@@ -14,7 +13,7 @@ type DbController struct {
 	DbConnection *pg.DB
 }
 
-func (this *DbController) ConnectToDb () {
+func (dc *DbController) ConnectToDb () {
 	dbuser, dbpass, dbdatabase := entities.GetDBCredentials()
   
 	db := pg.Connect(&pg.Options{
@@ -23,17 +22,17 @@ func (this *DbController) ConnectToDb () {
 		Database: dbdatabase,
 	})
 
-	this.DbConnection = db
+	dc.DbConnection = db
 }
 
-func (this *DbController) HandleRecordsUpdate (byteValue []byte) {
+func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 	var records []entities.DAppStringRecord
 	var numberRecords []entities.DAappNumberRecord
 
 	json.Unmarshal([]byte(byteValue), &records)
 	json.Unmarshal([]byte(byteValue), &numberRecords)
 
-	nodeData := map[string]string{};
+	nodeData := map[string]string{}
 
 	for i := 0; i < len(records); i++ {
 		record := records[i]
@@ -44,7 +43,7 @@ func (this *DbController) HandleRecordsUpdate (byteValue []byte) {
 			*record.Value = strconv.Itoa(*numberRecord.Value)
 		}
 
-		nodeData[record.Key] = *record.Value;
+		nodeData[record.Key] = *record.Value
 	}
 
 	var bondsorders []entities.BondsOrder
@@ -54,19 +53,19 @@ func (this *DbController) HandleRecordsUpdate (byteValue []byte) {
 	bondsorders = rawbo.UpdateAll(&nodeData)
 
 	
-	this.HandleBondsOrdersUpdate(&bondsorders)
+	dc.HandleBondsOrdersUpdate(&bondsorders)
 
 	for _, order := range bondsorders {
 		orderheights = append(orderheights, order.Height)
 	}
 
-	this.HandleBlocksMapUpdate(&orderheights)
+	dc.HandleBlocksMapUpdate(&orderheights)
 }
 
-func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrder) {
+func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrder) {
 	var existingRecords []entities.BondsOrder
 
-	_, getRecordsErr := this.DbConnection.
+	_, getRecordsErr := dc.DbConnection.
 		Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v;", entities.BONDS_ORDERS_NAME))
 
 	if getRecordsErr != nil {
@@ -78,7 +77,7 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 	// Base case when table is empty, just upload and return
 	if isEmpty {
 		fmt.Printf("0 records exist \n")
-		insertErr := this.DbConnection.Insert(freshData)
+		insertErr := dc.DbConnection.Insert(freshData)
 
 		if insertErr != nil {
 			fmt.Printf("Error occured on Insert... %v \n", insertErr)
@@ -96,7 +95,7 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 					newRecord.Status != oldRecord.Status ||
 					newRecord.Index != oldRecord.Index ||
 					newRecord.Filledamount != oldRecord.Filledamount) {
-					updateErr := this.DbConnection.Update(&newRecord)
+					updateErr := dc.DbConnection.Update(&newRecord)
 
 					if updateErr != nil {
 						fmt.Printf("Error occured on update... %v \n", updateErr)       
@@ -116,24 +115,24 @@ func (this *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOr
 			}
 		}
 
-		this.DbConnection.Insert(&recordsToAdd)
+		dc.DbConnection.Insert(&recordsToAdd)
 
 		fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), updatedRecordsCount)
 	}
 }
 
-func (this *DbController) TestUpdateBlocksMap () {
+func (dc *DbController) TestUpdateBlocksMap () {
 	// bm := entities.BlocksMap{}
 	// bm.GetTimestampByHeight("77777")
 }
 
-func (this *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
+func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	var existingRecords []entities.BlocksMap
 	var bondsOrders []entities.BondsOrder
 
-	_, getRecordsErr := this.DbConnection.
+	_, getRecordsErr := dc.DbConnection.
 		Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v ORDER BY height ASC;", entities.BLOCKS_MAP_NAME))
-	_, getBondsOrdersErr := this.DbConnection.
+	_, getBondsOrdersErr := dc.DbConnection.
 		Query(&bondsOrders, fmt.Sprintf("SELECT height FROM %v GROUP BY height ORDER BY height ASC;", entities.BONDS_ORDERS_NAME))
 
 	if getRecordsErr != nil || getBondsOrdersErr != nil {
@@ -186,7 +185,7 @@ func (this *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	}
 
 	fmt.Printf("blocks count: %v \n", len(freshData))
-	insertErr := this.DbConnection.Insert(&freshData)
+	insertErr := dc.DbConnection.Insert(&freshData)
 
 	if insertErr != nil {
 		fmt.Printf("Error occured on Insert... %v \n", insertErr)

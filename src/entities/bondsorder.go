@@ -3,6 +3,7 @@ package entities;
 import (
 	"fmt"
 	"regexp"
+	// "regexp"
 	"strconv"
 	"strings"
 
@@ -20,7 +21,7 @@ type BondsOrder struct {
 	Owner, Status, Pairname, Type string
 	Index *int
 	Price int
-	Height uint64
+	Height, Timestamp uint64
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
@@ -55,7 +56,6 @@ func (this *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 				continue;
 			}
 		}
-
 		nodeKeys = append(nodeKeys, k)
 	}
 
@@ -70,9 +70,7 @@ func (this *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 
 		if matchedAddress != "" {
 			ids = append(ids, matchedAddress)
-
 			resolveData[matchedAddress] = map[string]string{}
-
 			validKeys := this.GetKeys(&matchedAddress)
 
 			for _, validKey := range validKeys {
