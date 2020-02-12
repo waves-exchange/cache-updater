@@ -23,6 +23,8 @@ type BondsOrder struct {
 	Index *int
 	Price int
 	Height, Timestamp uint64
+	DebugROI uint64 `pg:"debug_roi"`
+	DebugPrice uint64 `pg:"debug_price"`
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
@@ -37,6 +39,8 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 		"order_filled_total_" + id,
 		"order_status_" + id,
 		"orderbook",
+		"debug_order_roi_" + id,
+		"debug_order_currentPrice_" + id,
 	}
 }
 
@@ -116,6 +120,8 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
 	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filled_total_" + id], 64)
 	status := item["order_status_" + id]
+	orderROI, _ := strconv.ParseInt(item["debug_order_roi_" + id], 10, 64)
+	orderPrice, _ := strconv.ParseInt(item["debug_order_currentPrice_" + id], 10, 64)
 
 	if priceErr != nil {
 		price = 0
@@ -142,8 +148,8 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		OrderId: id,
 		Height: uint64(height),
 		Price: int(price),
-		Total: float64(total / wavesContractPower),
-		Filledtotal: float64(filledtotal / wavesContractPower),
+		Total: total / wavesContractPower,
+		Filledtotal: filledtotal / wavesContractPower,
 		Index: index,
 		Owner: item["order_owner_" + id],
 		Resttotal: (total - filledtotal) / wavesContractPower,
@@ -153,5 +159,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / 100),
 		Pairname: "usd-nb_usd-n",
 		Type: "buy",
+		DebugROI: uint64(orderROI),
+		DebugPrice: uint64(orderPrice),
 	}
 }
