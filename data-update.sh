@@ -57,6 +57,7 @@ main () {
             --frequency) update_freq=$2 ;;
             --init-migration) init_migration ;;
             --redo-migration) redo_migrate=1 ;;
+            --log-file) log_file=$2 ;;
             --pwd ) PWD=$2 ;;
         esac
         shift;
