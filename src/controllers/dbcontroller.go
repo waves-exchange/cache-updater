@@ -14,9 +14,10 @@ type DbController struct {
 }
 
 func (dc *DbController) ConnectToDb () {
-	dbuser, dbpass, dbdatabase := entities.GetDBCredentials()
-  
+	dbhost, dbport, dbuser, dbpass, dbdatabase := entities.GetDBCredentials()
+
 	db := pg.Connect(&pg.Options{
+		Addr: dbhost + ":" + dbport,
 		User:     dbuser,
 		Password: dbpass,
 		Database: dbdatabase,
@@ -77,6 +78,11 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 	// Base case when table is empty, just upload and return
 	if isEmpty {
 		fmt.Printf("0 records exist \n")
+		if len(*freshData) == 0 {
+			fmt.Printf("0 new records added \n")
+			return
+		}
+
 		insertErr := dc.DbConnection.Insert(freshData)
 
 		if insertErr != nil {

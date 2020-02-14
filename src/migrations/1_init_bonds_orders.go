@@ -32,6 +32,9 @@ func init () {
 					type text,
 					debug_roi int,
 					debug_price int,
+					order_next text,
+					order_prev text,
+					is_first bool,
 					order_id text PRIMARY KEY
 				);
 				`, TABLE_NAME))
