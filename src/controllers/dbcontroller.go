@@ -14,9 +14,10 @@ type DbController struct {
 }
 
 func (dc *DbController) ConnectToDb () {
-	dbuser, dbpass, dbdatabase := entities.GetDBCredentials()
-  
+	dbhost, dbport, dbuser, dbpass, dbdatabase := entities.GetDBCredentials()
+
 	db := pg.Connect(&pg.Options{
+		Addr: dbhost + ":" + dbport,
 		User:     dbuser,
 		Password: dbpass,
 		Database: dbdatabase,

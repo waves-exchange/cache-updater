@@ -20,6 +20,9 @@ type BondsOrder struct {
 
 	OrderId string `pg:"order_id,pk"`
 	Owner, Status, Pairname, Type string
+	OrderPrev *string `pg:"order_prev"`
+	OrderNext *string `pg:"order_next"`
+	IsFirst bool `pg:"is_first"`
 	Index *int
 	Price int
 	Height, Timestamp uint64
@@ -41,6 +44,9 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 		"orderbook",
 		"debug_order_roi_" + id,
 		"debug_order_currentPrice_" + id,
+		"order_prev_" + id,
+		"order_next_" + id,
+		"order_first",
 	}
 }
 
@@ -122,6 +128,19 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	status := item["order_status_" + id]
 	orderROI, _ := strconv.ParseInt(item["debug_order_roi_" + id], 10, 64)
 	orderPrice, _ := strconv.ParseInt(item["debug_order_currentPrice_" + id], 10, 64)
+	rawOrderPrev := item["order_prev_" + id]
+    rawOrderNext := item["order_next_" + id]
+    var orderPrev, orderNext *string
+	firstOrderId := item["order_first"]
+
+	orderNext = nil
+	if rawOrderNext != "" {
+		orderNext = &rawOrderNext
+	}
+	orderPrev = nil
+	if rawOrderPrev != "" {
+		orderPrev = &rawOrderPrev
+	}
 
 	if priceErr != nil {
 		price = 0
@@ -161,5 +180,8 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Type: "buy",
 		DebugROI: uint64(orderROI),
 		DebugPrice: uint64(orderPrice),
+		OrderNext: orderNext,
+		OrderPrev: orderPrev,
+		IsFirst: id == firstOrderId,
 	}
 }
