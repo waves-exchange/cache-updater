@@ -51,13 +51,13 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 }
 
 func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
-	ids := []string{}
-	result := []BondsOrder{}
+	var ids []string
+	var result []BondsOrder
 	regexKeys := bo.GetKeys(nil)
 	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-	nodeKeys := []string{}
-	resolveData := make(map[string](map[string]string))
+	var nodeKeys []string
+	resolveData := make(map[string]map[string]string)
 
 	for k, _ := range *nodeData {
 		for _, regexKey := range regexKeys {
