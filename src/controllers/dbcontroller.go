@@ -52,7 +52,6 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 
 	rawbo := entities.BondsOrder{}
 	bondsorders = rawbo.UpdateAll(&nodeData)
-
 	
 	dc.HandleBondsOrdersUpdate(&bondsorders)
 

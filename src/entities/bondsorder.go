@@ -2,8 +2,6 @@ package entities;
 
 import (
 	"fmt"
-	"regexp"
-
 	// "regexp"
 	"strconv"
 	"strings"
@@ -50,62 +48,9 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 	}
 }
 
-func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
-	var ids []string
-	var result []BondsOrder
-	regexKeys := bo.GetKeys(nil)
-	heightKey := regexKeys[0]
-	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-	var nodeKeys []string
-	resolveData := make(map[string]map[string]string)
-
-	for k, _ := range *nodeData {
-		for _, regexKey := range regexKeys {
-			compiledRegex := regexp.MustCompile(regexKey)
-
-			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
-				continue;
-			}
-		}
-		nodeKeys = append(nodeKeys, k)
-	}
-
-	for _, k := range nodeKeys {
-		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
-
-		if len(heightRegexSubmatches) < 2 {
-			continue
-		}
-
-		matchedAddress := string(heightRegexSubmatches[1])
-
-		if matchedAddress != "" {
-			ids = append(ids, matchedAddress)
-			resolveData[matchedAddress] = map[string]string{}
-			validKeys := bo.GetKeys(&matchedAddress)
-
-			for _, validKey := range validKeys {
-				for _, k := range nodeKeys {
-					if k == validKey {
-						resolveData[matchedAddress][k] = (*nodeData)[k]
-					}
-				}
-			}
-		}
-	}
-
-	if heightRegexErr != nil {
-		return result
-	}
-
-	raw := BondsOrder{}
-
-	for _, id := range ids {
-		mappedModel := raw.MapItemToModel(id, resolveData[id])
-		result = append(result, *mappedModel)
-	}
-
-	return result
+func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []DAppEntity {
+	var raw DAppEntity
+	return CollectionUpdateAll(nodeData, raw)
 }
 
 func (bo *BondsOrder) UpdateItem () {}
@@ -120,7 +65,7 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
     return false
 }
 
-func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
+func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) interface{} {
 	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
 	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
 	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
