@@ -2,6 +2,7 @@ package entities;
 
 import (
 	"os"
+	"regexp"
 
 	"github.com/joho/godotenv"
 )
@@ -53,60 +54,58 @@ func GetDBCredentials () (string, string, string, string, string) {
 	return dbhost, dbport, dbuser, dbpass, dbdatabase
 }
 
-// func UpdateCollection (nodeData *map[string]string, constructor map[string]interface{}) {
-// 	ids := []string{}
-// 	result := []map[string]interface{}
-// 	regexKeys := this.GetKeys(nil)
-// 	heightKey := regexKeys[0]
-// 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-// 	nodeKeys := []string{}
-// 	resolveData := make(map[string](map[string]string))
+func CollectionUpdateAll(nodeData *map[string]string, entity DAppEntity) []DAppEntity {
+	var ids []string
+	var result []DAppEntity
+	regexKeys := entity.GetKeys(nil)
+	heightKey := regexKeys[0]
+	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+	var nodeKeys []string
+	resolveData := make(map[string]map[string]string)
 
-// 	for k, _ := range *nodeData {
-// 		for _, regexKey := range regexKeys {
-// 			compiledRegex := regexp.MustCompile(regexKey)
+	for k, _ := range *nodeData {
+		for _, regexKey := range regexKeys {
+			compiledRegex := regexp.MustCompile(regexKey)
 
-// 			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
-// 				continue;
-// 			}
-// 		}
-// 		nodeKeys = append(nodeKeys, k)
-// 	}
+			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+				continue
+			}
+		}
+		nodeKeys = append(nodeKeys, k)
+	}
 
-// 	for _, k := range nodeKeys {
-// 		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
+	for _, k := range nodeKeys {
+		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
 
-// 		if len(heightRegexSubmatches) < 2 {
-// 			continue
-// 		}
+		if len(heightRegexSubmatches) < 2 {
+			continue
+		}
 
-// 		matchedAddress := string(heightRegexSubmatches[1])
+		matchedAddress := string(heightRegexSubmatches[1])
 
-// 		if matchedAddress != "" {
-// 			ids = append(ids, matchedAddress)
-// 			resolveData[matchedAddress] = map[string]string{}
-// 			validKeys := this.GetKeys(&matchedAddress)
+		if matchedAddress != "" {
+			ids = append(ids, matchedAddress)
+			resolveData[matchedAddress] = map[string]string{}
+			validKeys := entity.GetKeys(&matchedAddress)
 
-// 			for _, validKey := range validKeys {
-// 				for _, k := range nodeKeys {
-// 					if k == validKey {
-// 						resolveData[matchedAddress][k] = (*nodeData)[k]
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
+			for _, validKey := range validKeys {
+				for _, k := range nodeKeys {
+					if k == validKey {
+						resolveData[matchedAddress][k] = (*nodeData)[k]
+					}
+				}
+			}
+		}
+	}
 
-// 	if heightRegexErr != nil {
-// 		return result
-// 	}
+	if heightRegexErr != nil {
+		return result
+	}
 
-// 	raw := constructor{}
+	for _, id := range ids {
+		mappedModel := entity.MapItemToModel(id, resolveData[id])
+		result = append(result, *mappedModel)
+	}
 
-// 	for _, id := range ids {
-// 		mappedModel := raw.MapItemToModel(id, resolveData[id])
-// 		result = append(result, *mappedModel)
-// 	}
-
-// 	return result
-// }
+	return result
+}
