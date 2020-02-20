@@ -54,10 +54,14 @@ func GetDBCredentials () (string, string, string, string, string) {
 	return dbhost, dbport, dbuser, dbpass, dbdatabase
 }
 
-func CollectionUpdateAll(nodeData *map[string]string, entity DAppEntity) []DAppEntity {
+func CollectionUpdateAll(
+	nodeData *map[string]string,
+	GetKeys func(*string) []string,
+	MapItemToModel func(string, map[string]string) interface{},
+) interface{} {
 	var ids []string
-	var result []DAppEntity
-	regexKeys := entity.GetKeys(nil)
+	var result []interface{}
+	regexKeys := GetKeys(nil)
 	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
 	var nodeKeys []string
@@ -86,7 +90,7 @@ func CollectionUpdateAll(nodeData *map[string]string, entity DAppEntity) []DAppE
 		if matchedAddress != "" {
 			ids = append(ids, matchedAddress)
 			resolveData[matchedAddress] = map[string]string{}
-			validKeys := entity.GetKeys(&matchedAddress)
+			validKeys := GetKeys(&matchedAddress)
 
 			for _, validKey := range validKeys {
 				for _, k := range nodeKeys {
@@ -103,8 +107,8 @@ func CollectionUpdateAll(nodeData *map[string]string, entity DAppEntity) []DAppE
 	}
 
 	for _, id := range ids {
-		mappedModel := entity.MapItemToModel(id, resolveData[id])
-		result = append(result, *mappedModel)
+		mappedModel := MapItemToModel(id, resolveData[id])
+		result = append(result, mappedModel)
 	}
 
 	return result
