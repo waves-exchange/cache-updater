@@ -47,11 +47,9 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 		nodeData[record.Key] = *record.Value
 	}
 
-	var bondsorders []entities.BondsOrder
 	var orderheights []uint64
-
 	rawbo := entities.BondsOrder{}
-	bondsorders = rawbo.UpdateAll(&nodeData)
+	bondsorders := rawbo.UpdateAll(&nodeData)
 	
 	dc.HandleBondsOrdersUpdate(&bondsorders)
 
@@ -126,11 +124,6 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 	}
 }
 
-func (dc *DbController) TestUpdateBlocksMap () {
-	// bm := entities.BlocksMap{}
-	// bm.GetTimestampByHeight("77777")
-}
-
 func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	var existingRecords []entities.BlocksMap
 	var bondsOrders []entities.BondsOrder
@@ -167,27 +160,29 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	index := 1
 	iterationsLimitPerUpdate := 15
 
-	for {
-		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
-		fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
+	go func () {
+		for {
+			fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
+			fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
 
-		freshData = append(freshData, *fetchedBlocksMap...)
-		minHeight = maxHeight + 1
-		maxHeight = maxHeight + maxRecordsCount + 1
+			freshData = append(freshData, *fetchedBlocksMap...)
+			minHeight = maxHeight + 1
+			maxHeight = maxHeight + maxRecordsCount + 1
 
-		if maxHeight == maxHeightBm.Height {
-			break
+			if maxHeight == maxHeightBm.Height {
+				break
+			}
+			if maxHeight > maxHeightBm.Height {
+				maxHeight = maxHeightBm.Height
+			}
+
+			index++
+
+			if index == iterationsLimitPerUpdate {
+				break
+			}
 		}
-		if maxHeight > maxHeightBm.Height {
-			maxHeight = maxHeightBm.Height
-		}
-
-		index++
-
-		if index == iterationsLimitPerUpdate {
-			break
-		}
-	}
+	}()
 
 	fmt.Printf("blocks count: %v \n", len(freshData))
 	insertErr := dc.DbConnection.Insert(&freshData)
