@@ -1,34 +1,54 @@
-# Data Models
-
-Every entity the cache updater works with stays in src/entities directory.
-As regards every single model, it's tightly coupled with appropriate database
-table in the database. PostgreSQL is used in this project.
-
-# Migrations
-
-Every database entity can be managed by migrations, thanks to:
-
-[go-pg migrations](https://github.com/go-pg/migrations)
-
 # Updating approach
 
 In order to perform operations with database the code logic is
 split between different kinds of controllers. Splitting logic
-is one of the ways for making code composing more pure. 
+is one of the ways for making code composing more pure.
 
-> DbController:
+# Updating in different cases
 
-```go
-type DbController struct {}
+> Empty database
+
+If database is empty, whole data from address data is parsed and put
+into appropriate tables.
+
+```
+func (uc *UpdateController) 
+    GrabAllAddressData () ([]byte, error) { ... }
+```
+ 
+Note that empty database is the only case
+of such approach
+
+---
+
+> Database is not empty, valid data is provided
+> up to specific block
+
+```
+func (uc *UpdateController) 
+    GrabStateChangeData () ([]byte, error) {...}
 ```
 
-This controller is responsible for database operations. It's tightly
-coupled with "go-pg" ORM for Golang.
+This function is responsible for grabbing appropriate transactions
+in specific block range. In our case from "N" to "O" blocks
 
-> UpdateController:
+> N - "last existing block in the database"
 
-```go
-type UpdateController struct {}
-```
+> O - "last existing confirmed block in blockchain"
 
-Responsible for data pulling from different sources.
+
+The next step is to transform all transactions in blocks,
+map to specified entity model, and more importantly, provide
+every record with status enum.
+
+``` confirm_status ```
+
+This field is enum, which can take either 
+
+``` confirmed ```
+or
+``` unconfirmed ```
+
+This approach is the only case to handle forks, in future
+it can help to drop invalid records
+
