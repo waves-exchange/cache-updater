@@ -1,11 +1,11 @@
-package entities;
+package entities
 
 import (
 	"fmt"
 	// "regexp"
 	"strconv"
 	"strings"
-
+	// "reflect"
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
@@ -48,15 +48,15 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 	}
 }
 
-func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
+func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
 	res := CollectionUpdateAll(nodeData, bo.GetKeys, bo.MapItemToModel)
 	if res == nil {
-		return make([]BondsOrder, 0)
+		return make([]*BondsOrder, 0)
 	}
 
-	result := make([]BondsOrder, len(res))
+	result := make([]*BondsOrder, len(res))
 	for idx, item := range res {
-		result[idx] = item.(BondsOrder)
+		result[idx] = item.(*BondsOrder)
 	}
 
 	return result
@@ -106,7 +106,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) interfa
 		filledtotal = 0
 	}
 
-	var index *int = nil;
+	var index *int = nil
 	orderbook := strings.Split(item["orderbook"], "_")
 	for orderbookindex, orderbookpos := range orderbook {
 		if orderbookpos == id {

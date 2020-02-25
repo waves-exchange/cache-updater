@@ -50,7 +50,7 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 
 	var orderheights []uint64
 	rb := entities.BondsOrder{}
-	var bondsorders = rb.UpdateAll(&nodeData)
+	bondsorders := rb.UpdateAll(&nodeData)
 	dc.HandleBondsOrdersUpdate(&bondsorders)
 
 	for _, order := range bondsorders {
@@ -60,7 +60,7 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 	dc.HandleBlocksMapUpdate(&orderheights)
 }
 
-func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrder) {
+func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrder) {
 	var existingRecords []entities.BondsOrder
 
 	_, getRecordsErr := dc.DbConnection.
@@ -114,7 +114,7 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]entities.BondsOrde
 			}
 
 			if !exists {
-				recordsToAdd = append(recordsToAdd, newRecord)
+				recordsToAdd = append(recordsToAdd, *newRecord)
 			}
 		}
 
