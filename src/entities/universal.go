@@ -1,7 +1,6 @@
 package entities;
 
 import (
-	"fmt"
 	"os"
 	"regexp"
 
@@ -61,7 +60,6 @@ func CollectionUpdateAll(
 	MapItemToModel func(string, map[string]string) interface{},
 ) []interface{} {
 	var ids []string
-	var result []interface{}
 	regexKeys := GetKeys(nil)
 	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
@@ -104,15 +102,14 @@ func CollectionUpdateAll(
 	}
 
 	if heightRegexErr != nil {
-		return result
+		return make([]interface{}, 0)
 	}
 
+	result := make([]interface{}, len(ids))
 	for i, id := range ids {
 		mappedModel := MapItemToModel(id, resolveData[id])
 		result[i] = mappedModel
 	}
-
-	fmt.Println("RESULT: %v", result)
 
 	return result
 }

@@ -53,15 +53,13 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
 	if res == nil {
 		return make([]BondsOrder, 0)
 	}
-	result := make([]BondsOrder, 1000)
+
+	result := make([]BondsOrder, len(res))
 	for idx, item := range res {
 		result[idx] = item.(BondsOrder)
 	}
 
 	return result
-	// return res
-	// return resI
-	// return res.([]BondsOrder)
 }
 
 func (bo *BondsOrder) UpdateItem () {}

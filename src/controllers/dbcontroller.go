@@ -49,8 +49,8 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 	}
 
 	var orderheights []uint64
-	rawbo := entities.BondsOrder{}
-	var bondsorders = rawbo.UpdateAll(&nodeData)
+	rb := entities.BondsOrder{}
+	var bondsorders = rb.UpdateAll(&nodeData)
 	dc.HandleBondsOrdersUpdate(&bondsorders)
 
 	for _, order := range bondsorders {
