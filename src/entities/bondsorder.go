@@ -49,8 +49,14 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 }
 
 func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
-	res := CollectionUpdateAll(nodeData, bo.GetKeys, bo.MapItemToModel)
-	return res.([]BondsOrder)
+	var res []BondsOrder
+
+	CollectionUpdateAll(&res, nodeData, bo.GetKeys, bo.MapItemToModel)
+	if res == nil {
+		return make([]BondsOrder, 0)
+	}
+	return res
+	// return res.([]BondsOrder)
 }
 
 func (bo *BondsOrder) UpdateItem () {}

@@ -29,6 +29,8 @@ func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
 	return byteValue, nil
 }
 
+// func (uc *UpdateController) GrabStateChangeData () ([]byte, error) {}
+
 func (uc *UpdateController) UpdateAllData () {
 	byteValue, _ := uc.GrabAllAddressData()
 

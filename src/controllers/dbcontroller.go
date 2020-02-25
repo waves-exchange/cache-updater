@@ -6,6 +6,7 @@ import (
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/src/entities"
 	"strconv"
+	"sync"
 )
 
 type DbController struct {
@@ -49,8 +50,7 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 
 	var orderheights []uint64
 	rawbo := entities.BondsOrder{}
-	bondsorders := rawbo.UpdateAll(&nodeData)
-	
+	var bondsorders = rawbo.UpdateAll(&nodeData)
 	dc.HandleBondsOrdersUpdate(&bondsorders)
 
 	for _, order := range bondsorders {
@@ -143,7 +143,8 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 		return
 	}
 
-	var freshData []entities.BlocksMap
+	var freshData chan entities.BlocksMap
+	// var freshData []entities.BlocksMap
 
 	minHeightBm := bondsOrders[0]
 	maxHeightBm := bondsOrders[len(bondsOrders) - 1]
@@ -160,17 +161,28 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	index := 1
 	iterationsLimitPerUpdate := 15
 
-	go func () {
-		for {
+	var wg sync.WaitGroup
+
+	fmt.Println("I AM HEREE")
+
+	for {
+		wg.Add(1)
+		go func () {
 			fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
 			fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
 
-			freshData = append(freshData, *fetchedBlocksMap...)
+			// freshData = append(freshData, *fetchedBlocksMap...)
+			// freshData <- *fetchedBlocksMap
+			for _, item := range *fetchedBlocksMap {
+				freshData <- item
+			}
+
 			minHeight = maxHeight + 1
 			maxHeight = maxHeight + maxRecordsCount + 1
 
 			if maxHeight == maxHeightBm.Height {
-				break
+				wg.Done()
+				return
 			}
 			if maxHeight > maxHeightBm.Height {
 				maxHeight = maxHeightBm.Height
@@ -179,10 +191,35 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 			index++
 
 			if index == iterationsLimitPerUpdate {
-				break
+				wg.Done()
+				return
 			}
-		}
-	}()
+		}()
+	}
+	//
+	//for {
+	//	fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
+	//	fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
+	//
+	//	freshData = append(freshData, *fetchedBlocksMap...)
+	//	minHeight = maxHeight + 1
+	//	maxHeight = maxHeight + maxRecordsCount + 1
+	//
+	//	if maxHeight == maxHeightBm.Height {
+	//		break
+	//	}
+	//	if maxHeight > maxHeightBm.Height {
+	//		maxHeight = maxHeightBm.Height
+	//	}
+	//
+	//	index++
+	//
+	//	if index == iterationsLimitPerUpdate {
+	//		break
+	//	}
+	//}
+
+	fmt.Printf("Data len is: %v \n", len(freshData))
 
 	fmt.Printf("blocks count: %v \n", len(freshData))
 	insertErr := dc.DbConnection.Insert(&freshData)
