@@ -56,13 +56,12 @@ func GetDBCredentials () (string, string, string, string, string) {
 }
 
 func CollectionUpdateAll(
-	result interface{},
 	nodeData *map[string]string,
 	GetKeys func(*string) []string,
 	MapItemToModel func(string, map[string]string) interface{},
-) {
+) []interface{} {
 	var ids []string
-	// var result []interface{}
+	var result []interface{}
 	regexKeys := GetKeys(nil)
 	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
@@ -105,13 +104,15 @@ func CollectionUpdateAll(
 	}
 
 	if heightRegexErr != nil {
-		return
+		return result
 	}
 
-	for _, id := range ids {
+	for i, id := range ids {
 		mappedModel := MapItemToModel(id, resolveData[id])
-		result = append(result.([]interface{}), mappedModel)
+		result[i] = mappedModel
 	}
 
 	fmt.Println("RESULT: %v", result)
+
+	return result
 }
