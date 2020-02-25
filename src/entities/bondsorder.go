@@ -48,9 +48,9 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 	}
 }
 
-func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []DAppEntity {
-	var raw DAppEntity
-	return CollectionUpdateAll(nodeData, raw)
+func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
+	res := CollectionUpdateAll(nodeData, bo.GetKeys, bo.MapItemToModel)
+	return res.([]BondsOrder)
 }
 
 func (bo *BondsOrder) UpdateItem () {}

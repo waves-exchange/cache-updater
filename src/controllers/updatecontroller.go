@@ -11,20 +11,26 @@ type UpdateController struct {
 	DbDelegate *DbController
 }
 
-func (uc *UpdateController) UpdateAllData () {
+func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
 	dAppAddress := os.Getenv("DAPP_ADDRESS")
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := nodeUrl + "/addresses/data/" + dAppAddress
 	response, err := http.Get(connectionUrl)
-	
+
 	if err != nil {
 		fmt.Println(err)
-		return
+		return make([]byte, 0), err
 	}
-	
+
 	defer response.Body.Close()
 
 	byteValue, _ := ioutil.ReadAll(response.Body)
+
+	return byteValue, nil
+}
+
+func (uc *UpdateController) UpdateAllData () {
+	byteValue, _ := uc.GrabAllAddressData()
 
 	uc.DbDelegate.HandleRecordsUpdate(byteValue)
 }
