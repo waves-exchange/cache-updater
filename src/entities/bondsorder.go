@@ -1,11 +1,13 @@
-package entities;
+package entities
 
 import (
 	"fmt"
+	"regexp"
+
 	// "regexp"
 	"strconv"
 	"strings"
-
+	// "reflect"
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
@@ -48,9 +50,66 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 	}
 }
 
-func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []BondsOrder {
-	res := CollectionUpdateAll(nodeData, bo.GetKeys, bo.MapItemToModel)
-	return res.([]BondsOrder)
+func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
+	// ids := []string{}
+	// result := []BondsOrder{}
+
+	var ids []string
+	regexKeys := bo.GetKeys(nil)
+	heightKey := regexKeys[0]
+	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+	nodeKeys := []string{}
+	resolveData := make(map[string](map[string]string))
+
+	for k, _ := range *nodeData {
+		for _, regexKey := range regexKeys {
+			compiledRegex := regexp.MustCompile(regexKey)
+
+			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+				continue;
+			}
+		}
+		nodeKeys = append(nodeKeys, k)
+	}
+
+	for _, k := range nodeKeys {
+		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
+
+		if len(heightRegexSubmatches) < 2 {
+			continue
+		}
+
+		matchedAddress := string(heightRegexSubmatches[1])
+
+		if matchedAddress != "" {
+			ids = append(ids, matchedAddress)
+			resolveData[matchedAddress] = map[string]string{}
+			validKeys := bo.GetKeys(&matchedAddress)
+
+			for _, validKey := range validKeys {
+				for _, k := range nodeKeys {
+					if k == validKey {
+						resolveData[matchedAddress][k] = (*nodeData)[k]
+					}
+				}
+			}
+		}
+	}
+
+	result := make([]*BondsOrder, len(ids))
+	if heightRegexErr != nil {
+		return result
+	}
+
+	raw := BondsOrder{}
+
+	for index, id := range ids {
+		mappedModel := raw.MapItemToModel(id, resolveData[id])
+		// result = append(result, mappedModel)
+		result[index] = mappedModel
+	}
+
+	return result
 }
 
 func (bo *BondsOrder) UpdateItem () {}
@@ -65,7 +124,7 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
     return false
 }
 
-func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) interface{} {
+func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
 	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
 	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
 	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
@@ -97,7 +156,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) interfa
 		filledtotal = 0
 	}
 
-	var index *int = nil;
+	var index *int = nil
 	orderbook := strings.Split(item["orderbook"], "_")
 	for orderbookindex, orderbookpos := range orderbook {
 		if orderbookpos == id {

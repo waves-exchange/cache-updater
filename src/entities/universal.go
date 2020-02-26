@@ -1,10 +1,13 @@
-package entities;
+package entities
 
 import (
-	"os"
-	"regexp"
-
+	"encoding/json"
+	"fmt"
 	"github.com/joho/godotenv"
+	"github.com/ventuary-lab/cache-updater/swagger-types/models"
+	"io/ioutil"
+	"net/http"
+	"os"
 )
 type DAappNumberRecord struct {
 	Key, Type string
@@ -14,15 +17,6 @@ type DAappNumberRecord struct {
 type DAppStringRecord struct {
 	Key, Type string
 	Value *string
-}
-
-func StrArrayContains(s []string, e string) bool {
-    for _, a := range s {
-        if a == e {
-            return true
-        }
-    }
-    return false
 }
 
 func unwrapDefaultRegex (rawregex *string, defaultRegex string) string {
@@ -54,62 +48,157 @@ func GetDBCredentials () (string, string, string, string, string) {
 	return dbhost, dbport, dbuser, dbpass, dbdatabase
 }
 
-func CollectionUpdateAll(
-	nodeData *map[string]string,
-	GetKeys func(*string) []string,
-	MapItemToModel func(string, map[string]string) interface{},
-) interface{} {
-	var ids []string
-	var result []interface{}
-	regexKeys := GetKeys(nil)
-	heightKey := regexKeys[0]
-	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-	var nodeKeys []string
-	resolveData := make(map[string]map[string]string)
+//func CollectionUpdateAll(
+//	nodeData *map[string]string,
+//	GetKeys func(*string) []string,
+//	MapItemToModel func(string, map[string]string) interface{},
+//) []interface{} {
+//	var ids []string
+//	regexKeys := GetKeys(nil)
+//	heightKey := regexKeys[0]
+//	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+//	var nodeKeys []string
+//	resolveData := make(map[string]map[string]string)
+//
+//	for k, _ := range *nodeData {
+//		for _, regexKey := range regexKeys {
+//			compiledRegex := regexp.MustCompile(regexKey)
+//
+//			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+//				continue
+//			}
+//		}
+//		nodeKeys = append(nodeKeys, k)
+//	}
+//
+//	for _, k := range nodeKeys {
+//		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
+//
+//		if len(heightRegexSubmatches) < 2 {
+//			continue
+//		}
+//
+//		matchedAddress := string(heightRegexSubmatches[1])
+//
+//		if matchedAddress != "" {
+//			ids = append(ids, matchedAddress)
+//			resolveData[matchedAddress] = map[string]string{}
+//			validKeys := GetKeys(&matchedAddress)
+//
+//			for _, validKey := range validKeys {
+//				for _, k := range nodeKeys {
+//					if k == validKey {
+//						resolveData[matchedAddress][k] = (*nodeData)[k]
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	if heightRegexErr != nil {
+//		return make([]interface{}, 0)
+//	}
+//
+//	result := make([]interface{}, len(ids))
+//	for i, id := range ids {
+//		mappedModel := MapItemToModel(id, resolveData[id])
+//		result[i] = mappedModel
+//	}
+//
+//	return result
+//}
 
-	for k, _ := range *nodeData {
-		for _, regexKey := range regexKeys {
-			compiledRegex := regexp.MustCompile(regexKey)
+func FetchLastBlock () []byte {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/headers/last", nodeUrl)
+	response, err := http.Get(connectionUrl)
 
-			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
-				continue
-			}
-		}
-		nodeKeys = append(nodeKeys, k)
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return make([]byte, 0)
 	}
 
-	for _, k := range nodeKeys {
-		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
+	defer response.Body.Close()
 
-		if len(heightRegexSubmatches) < 2 {
-			continue
-		}
+	byteValue, readErr := ioutil.ReadAll(response.Body)
 
-		matchedAddress := string(heightRegexSubmatches[1])
-
-		if matchedAddress != "" {
-			ids = append(ids, matchedAddress)
-			resolveData[matchedAddress] = map[string]string{}
-			validKeys := GetKeys(&matchedAddress)
-
-			for _, validKey := range validKeys {
-				for _, k := range nodeKeys {
-					if k == validKey {
-						resolveData[matchedAddress][k] = (*nodeData)[k]
-					}
-				}
-			}
-		}
+	if readErr != nil {
+		return make([]byte, 0)
 	}
 
-	if heightRegexErr != nil {
-		return result
+	return byteValue
+}
+
+func FetchBlocksRangeByAddress(address, heightMin, heightMax string) *[]models.Block {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/address/%v/%v/%v", nodeUrl, address, heightMin, heightMax)
+	response, err := http.Get(connectionUrl)
+
+	var blocksRange []models.Block
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &blocksRange
 	}
 
-	for _, id := range ids {
-		mappedModel := MapItemToModel(id, resolveData[id])
-		result = append(result, mappedModel)
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return &blocksRange
 	}
 
-	return result
+	json.Unmarshal(byteValue, &blocksRange)
+	return &blocksRange
+}
+
+func FetchTransactionsOnSpecificBlock (height string) *models.Block {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/at/%v", nodeUrl, height)
+	response, err := http.Get(connectionUrl)
+
+	var block models.Block
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &block
+	}
+
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return &block
+	}
+
+	json.Unmarshal(byteValue, &block)
+
+	return &block
+}
+
+func FetchBlocksRange (heightMin, heightMax string) *[]models.Block {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
+	response, err := http.Get(connectionUrl)
+
+	var blocksRange []models.Block
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &blocksRange
+	}
+
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return &blocksRange
+	}
+
+	json.Unmarshal(byteValue, &blocksRange)
+
+	return &blocksRange
 }
