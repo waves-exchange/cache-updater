@@ -79,7 +79,7 @@ maxHeightRange := uint64(99)
 heightDiff := bm.Height - latestExRecord.Height
 ````
 
-if ```heightDiff > 90``` then we should decompose blocks range.
+if ```heightDiff > 99``` then we should decompose blocks range.
 
 For ```Z``` times, where is
 ```

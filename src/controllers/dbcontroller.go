@@ -115,12 +115,12 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 			blockWithTxList := entities.FetchTransactionsOnSpecificBlock(
 				fmt.Sprintf("%v", *block.Height),
 			)
+			iter++
 
 			// Invoke Script Transaction: 16
 			for _, tx := range blockWithTxList.Transactions {
 				txType := tx["type"]
 				//fmt.Printf("Type is: %v \n", txType)
-				iter++
 
 				// Let only Invoke transactions stay
 				if txType != float64(16) {
