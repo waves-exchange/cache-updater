@@ -53,22 +53,47 @@ type DAppEntity interface {
 }
 ```
 
-### Refactored update plan
- 
-The next step in order to refactor is
-to transform all transactions in blocks,
-map to specified entity model.
+Updating starts from checking existing records and if they actually exist
+the function delegates responsibility to:
+ ```HandleExistingBondsOrdersUpdate```
+ method
 
-And more importantly, provide
-every record with status enum.
+```go
+var existingBondsOrders []entities.BondsOrder
+_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
 
-``` confirm_status ```
+if len(existingBondsOrders) != 0 {
+    dc.HandleExistingBondsOrdersUpdate()
+    return
+}
+```
 
-This field is enum, which can take either 
+As it was mentioned before, function firstly checks out how many
+blocks need updating, regarding the maximum range 
+(99 blocks per request, let it be constant ```MHR = 99```)
 
-``` confirmed ```
-or
-``` unconfirmed ```
+```go
+maxHeightRange := uint64(99)
+heightDiff := bm.Height - latestExRecord.Height
+````
 
-This approach is the only case to handle forks, in order
-to drop invalid records in future.
+if ```heightDiff > 90``` then we should decompose blocks range.
+
+For ```Z``` times, where is
+```
+Z = (latestHeight - existingHeight) / maxHeightRange
+```
+
+The next step is blocks processing. We fetch block headers list:
+
+```go
+func FetchBlocksRange (heightMin, heightMax string) *[]models.BlockHeader {}
+```
+
+Then, we fetch transaction list for every block, using this function:
+
+```go
+func FetchTransactionsOnSpecificBlock (height string) *models.Block {
+```
+
+We face ```2 * Z * MHR``` count of requests
