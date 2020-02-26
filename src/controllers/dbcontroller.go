@@ -6,7 +6,6 @@ import (
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/src/entities"
 	"strconv"
-	"sync"
 )
 
 type DbController struct {
@@ -91,7 +90,8 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrd
 		var recordsToAdd []entities.BondsOrder
 		updatedRecordsCount := 0
 		
-		for _, newRecord := range *freshData {
+		for _, newRecordRef := range *freshData {
+			newRecord := *newRecordRef
 			exists := false
 			for _, oldRecord := range existingRecords {
 				if newRecord.OrderId == oldRecord.OrderId && (
@@ -114,7 +114,7 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrd
 			}
 
 			if !exists {
-				recordsToAdd = append(recordsToAdd, *newRecord)
+				recordsToAdd = append(recordsToAdd, newRecord)
 			}
 		}
 
@@ -143,8 +143,8 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 		return
 	}
 
-	var freshData chan entities.BlocksMap
-	// var freshData []entities.BlocksMap
+	// freshData := make(chan entities.BlocksMap)
+	var freshData []entities.BlocksMap
 
 	minHeightBm := bondsOrders[0]
 	maxHeightBm := bondsOrders[len(bondsOrders) - 1]
@@ -161,62 +161,65 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	index := 1
 	iterationsLimitPerUpdate := 15
 
-	var wg sync.WaitGroup
-
-	fmt.Println("I AM HEREE")
 
 	for {
-		wg.Add(1)
-		go func () {
-			fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
-			fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
+		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
+		fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
 
-			// freshData = append(freshData, *fetchedBlocksMap...)
-			// freshData <- *fetchedBlocksMap
-			for _, item := range *fetchedBlocksMap {
-				freshData <- item
-			}
+		freshData = append(freshData, *fetchedBlocksMap...)
+		minHeight = maxHeight + 1
+		maxHeight = maxHeight + maxRecordsCount + 1
 
-			minHeight = maxHeight + 1
-			maxHeight = maxHeight + maxRecordsCount + 1
+		if maxHeight == maxHeightBm.Height {
+			break
+		}
+		if maxHeight > maxHeightBm.Height {
+			maxHeight = maxHeightBm.Height
+		}
 
-			if maxHeight == maxHeightBm.Height {
-				wg.Done()
-				return
-			}
-			if maxHeight > maxHeightBm.Height {
-				maxHeight = maxHeightBm.Height
-			}
+		index++
 
-			index++
-
-			if index == iterationsLimitPerUpdate {
-				wg.Done()
-				return
-			}
-		}()
+		if index == iterationsLimitPerUpdate {
+			break
+		}
 	}
-	//
+
+	// var wg sync.WaitGroup
 	//for {
-	//	fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
-	//	fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
+	//	wg.Add(1)
+	//	go func () {
+	//		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
 	//
-	//	freshData = append(freshData, *fetchedBlocksMap...)
-	//	minHeight = maxHeight + 1
-	//	maxHeight = maxHeight + maxRecordsCount + 1
+	//		if minHeight > maxHeight {
+	//			wg.Done()
+	//			return
+	//		}
 	//
-	//	if maxHeight == maxHeightBm.Height {
-	//		break
-	//	}
-	//	if maxHeight > maxHeightBm.Height {
-	//		maxHeight = maxHeightBm.Height
-	//	}
+	//		fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
 	//
-	//	index++
+	//		for _, item := range *fetchedBlocksMap {
+	//			freshData<-item
+	//			// freshData = append(freshData, item)
+	//		}
 	//
-	//	if index == iterationsLimitPerUpdate {
-	//		break
-	//	}
+	//		minHeight = maxHeight + 1
+	//		maxHeight = maxHeight + maxRecordsCount + 1
+	//
+	//		if maxHeight == maxHeightBm.Height {
+	//			wg.Done()
+	//			return
+	//		}
+	//		if maxHeight > maxHeightBm.Height {
+	//			maxHeight = maxHeightBm.Height
+	//		}
+	//
+	//		index++
+	//
+	//		if index == iterationsLimitPerUpdate {
+	//			wg.Done()
+	//			return
+	//		}
+	//	}()
 	//}
 
 	fmt.Printf("Data len is: %v \n", len(freshData))
