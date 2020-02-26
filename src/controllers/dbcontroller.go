@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/src/entities"
-	"reflect"
-
+	//"reflect"
 	//"os"
 	//"reflect"
 	"strconv"
@@ -101,7 +100,8 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
 
-	//if heightDiff > maxHeightRange {
+	iter := 0
+
 	if true {
 		minH := latestExRecord.Height
 		maxH := minH + maxHeightRange
@@ -116,11 +116,11 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 				fmt.Sprintf("%v", *block.Height),
 			)
 
-
 			// Invoke Script Transaction: 16
 			for _, tx := range blockWithTxList.Transactions {
 				txType := tx["type"]
 				//fmt.Printf("Type is: %v \n", txType)
+				iter++
 
 				// Let only Invoke transactions stay
 				if txType != float64(16) {
@@ -136,6 +136,8 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 	} else {
 
 	}
+
+	fmt.Printf("Iter: %v \n", iter)
 }
 
 func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrder) {
