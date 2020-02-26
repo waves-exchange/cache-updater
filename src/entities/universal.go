@@ -1,6 +1,9 @@
 package entities;
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 
@@ -112,4 +115,25 @@ func CollectionUpdateAll(
 	}
 
 	return result
+}
+
+func FetchBlocksRange (heightMin, heightMax string) []byte {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
+	response, err := http.Get(connectionUrl)
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return make([]byte, 0)
+	}
+
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return make([]byte, 0)
+	}
+
+	return byteValue
 }
