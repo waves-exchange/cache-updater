@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/src/entities"
-	"os"
 	"reflect"
+
+	//"os"
+	//"reflect"
 	"strconv"
 )
 
@@ -96,10 +98,40 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 
 	maxHeightRange := uint64(99)
 	heightDiff := bm.Height - latestExRecord.Height
-	if heightDiff > maxHeightRange {
+
+	fmt.Printf("heightDiff: %v\n", heightDiff)
+
+	//if heightDiff > maxHeightRange {
+	if true {
 		minH := latestExRecord.Height
 		maxH := minH + maxHeightRange
 
+		blocks := entities.FetchBlocksRange(
+			fmt.Sprintf("%v", minH),
+			fmt.Sprintf("%v", maxH),
+		)
+
+		for _, block := range *blocks {
+			blockWithTxList := entities.FetchTransactionsOnSpecificBlock(
+				fmt.Sprintf("%v", *block.Height),
+			)
+
+
+			// Invoke Script Transaction: 16
+			for _, tx := range blockWithTxList.Transactions {
+				txType := tx["type"]
+				//fmt.Printf("Type is: %v \n", txType)
+
+				// Let only Invoke transactions stay
+				if txType != float64(16) {
+					continue
+				}
+
+				// fmt.Printf("Type: %v \n", reflect.TypeOf(txType))
+				fmt.Printf("Invoke TX: %v\n", tx)
+				fmt.Printf("TX TYPE: %v\n", txType)
+			}
+		}
 
 	} else {
 

@@ -209,12 +209,12 @@ func FetchTransactionsOnSpecificBlock (height string) *models.Block {
 	return &block
 }
 
-func FetchBlocksRange (heightMin, heightMax string) *[]models.Block {
+func FetchBlocksRange (heightMin, heightMax string) *[]models.BlockHeader {
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
 	response, err := http.Get(connectionUrl)
 
-	var blocksRange []models.Block
+	var blocksRange []models.BlockHeader
 
 	if err != nil {
 		fmt.Printf("Error occured on fetch... %v \n", err)
