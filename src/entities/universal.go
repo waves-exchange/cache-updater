@@ -1,8 +1,10 @@
-package entities;
+package entities
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
+	"github.com/ventuary-lab/cache-updater/swagger-types/models"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,15 +17,6 @@ type DAappNumberRecord struct {
 type DAppStringRecord struct {
 	Key, Type string
 	Value *string
-}
-
-func StrArrayContains(s []string, e string) bool {
-    for _, a := range s {
-        if a == e {
-            return true
-        }
-    }
-    return false
 }
 
 func unwrapDefaultRegex (rawregex *string, defaultRegex string) string {
@@ -136,14 +129,16 @@ func FetchLastBlock () []byte {
 	return byteValue
 }
 
-func FetchBlocksRange (heightMin, heightMax string) []byte {
+func FetchBlocksRangeByAddress(address, heightMin, heightMax string) *[]models.Block {
 	nodeUrl := os.Getenv("NODE_URL")
-	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
+	connectionUrl := fmt.Sprintf("%v/blocks/address/%v/%v/%v", nodeUrl, address, heightMin, heightMax)
 	response, err := http.Get(connectionUrl)
+
+	var blocksRange []models.Block
 
 	if err != nil {
 		fmt.Printf("Error occured on fetch... %v \n", err)
-		return make([]byte, 0)
+		return &blocksRange
 	}
 
 	defer response.Body.Close()
@@ -151,8 +146,59 @@ func FetchBlocksRange (heightMin, heightMax string) []byte {
 	byteValue, readErr := ioutil.ReadAll(response.Body)
 
 	if readErr != nil {
-		return make([]byte, 0)
+		return &blocksRange
 	}
 
-	return byteValue
+	json.Unmarshal(byteValue, &blocksRange)
+	return &blocksRange
+}
+
+func FetchTransactionsOnSpecificBlock (height string) *models.Block {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/at/%v", nodeUrl, height)
+	response, err := http.Get(connectionUrl)
+
+	var block models.Block
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &block
+	}
+
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return &block
+	}
+
+	json.Unmarshal(byteValue, &block)
+
+	return &block
+}
+
+func FetchBlocksRange (heightMin, heightMax string) *[]models.Block {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
+	response, err := http.Get(connectionUrl)
+
+	var blocksRange []models.Block
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &blocksRange
+	}
+
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return &blocksRange
+	}
+
+	json.Unmarshal(byteValue, &blocksRange)
+
+	return &blocksRange
 }

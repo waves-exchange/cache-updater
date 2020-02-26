@@ -46,4 +46,5 @@ main () {
   done
 }
 
+# shellcheck disable=SC2068
 main $@
