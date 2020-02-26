@@ -32,7 +32,6 @@ func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
 // func (uc *UpdateController) GrabStateChangeData () ([]byte, error) {}
 
 func (uc *UpdateController) UpdateAllData () {
-	byteValue, _ := uc.GrabAllAddressData()
-
-	uc.DbDelegate.HandleRecordsUpdate(byteValue)
+	// byteValue, _ := uc.GrabAllAddressData()
+	uc.DbDelegate.HandleRecordsUpdate()
 }

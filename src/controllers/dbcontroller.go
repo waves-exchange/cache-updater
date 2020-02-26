@@ -26,9 +26,19 @@ func (dc *DbController) ConnectToDb () {
 	dc.DbConnection = db
 }
 
-func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
+func (dc *DbController) HandleRecordsUpdate () {
 	var records []entities.DAppStringRecord
 	var numberRecords []entities.DAappNumberRecord
+
+	var existingBondsOrders []entities.BondsOrder
+	_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
+
+	if len(existingBondsOrders) != 0 {
+		dc.HandleExistingBondsOrdersUpdate()
+		return
+	}
+
+	byteValue, _ := dc.UcDelegate.GrabAllAddressData()
 
 	json.Unmarshal([]byte(byteValue), &records)
 	json.Unmarshal([]byte(byteValue), &numberRecords)
@@ -50,6 +60,7 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 	var orderheights []uint64
 	rb := entities.BondsOrder{}
 	bondsorders := rb.UpdateAll(&nodeData)
+
 	dc.HandleBondsOrdersUpdate(&bondsorders)
 
 	for _, order := range bondsorders {
@@ -59,11 +70,44 @@ func (dc *DbController) HandleRecordsUpdate (byteValue []byte) {
 	dc.HandleBlocksMapUpdate(&orderheights)
 }
 
+func (dc *DbController) GetAllEntityRecords (records interface{}, tableName string) error {
+	_, getRecordsErr := dc.DbConnection.
+		Query(records, fmt.Sprintf("SELECT * FROM %v;", tableName))
+	return getRecordsErr
+}
+
+func (dc *DbController) HandleExistingBondsOrdersUpdate () {
+	fmt.Println("Records exists, updating based on existing...")
+
+	var records []entities.BondsOrder
+	_, getRecordsErr := dc.DbConnection.
+		Query(&records, fmt.Sprintf("SELECT * FROM %v ORDER BY height DESC;", entities.BONDS_ORDERS_NAME))
+
+	if getRecordsErr != nil {
+		fmt.Printf("Error on select... %v\n", getRecordsErr)
+	}
+
+	var bm entities.BlocksMap
+	latestExRecord := records[0]
+	byteValue := entities.FetchLastBlock()
+	_ = json.Unmarshal([]byte(byteValue), &bm)
+
+	maxHeightRange := uint64(99)
+	heightDiff := bm.Height - latestExRecord.Height
+
+	if heightDiff > maxHeightRange {
+
+	} else {
+
+	}
+}
+
 func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrder) {
 	var existingRecords []entities.BondsOrder
-
-	_, getRecordsErr := dc.DbConnection.
-		Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v;", entities.BONDS_ORDERS_NAME))
+	//
+	//_, getRecordsErr := dc.DbConnection.
+	//	Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v;", entities.BONDS_ORDERS_NAME))
+	getRecordsErr := dc.GetAllEntityRecords(&existingRecords, entities.BONDS_ORDERS_NAME)
 
 	if getRecordsErr != nil {
 		return
@@ -87,40 +131,41 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrd
 			fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
 		}
 	} else {
-		var recordsToAdd []entities.BondsOrder
-		updatedRecordsCount := 0
-		
-		for _, newRecordRef := range *freshData {
-			newRecord := *newRecordRef
-			exists := false
-			for _, oldRecord := range existingRecords {
-				if newRecord.OrderId == oldRecord.OrderId && (
-					newRecord.Status != oldRecord.Status ||
-					newRecord.Index != oldRecord.Index ||
-					newRecord.Filledamount != oldRecord.Filledamount) {
-					updateErr := dc.DbConnection.Update(&newRecord)
-
-					if updateErr != nil {
-						fmt.Printf("Error occured on update... %v \n", updateErr)       
-					} else {
-						updatedRecordsCount++
-					}
-
-					exists = true
-				} else if newRecord.OrderId == oldRecord.OrderId {
-					exists = true
-					break
-				}
-			}
-
-			if !exists {
-				recordsToAdd = append(recordsToAdd, newRecord)
-			}
-		}
-
-		dc.DbConnection.Insert(&recordsToAdd)
-
-		fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), updatedRecordsCount)
+		//var recordsToAdd []entities.BondsOrder
+		//updatedRecordsCount := 0
+		//
+		//for _, newRecordRef := range *freshData {
+		//	newRecord := *newRecordRef
+		//	exists := false
+		//	for _, oldRecord := range existingRecords {
+		//		if newRecord.OrderId == oldRecord.OrderId && (
+		//			newRecord.Status != oldRecord.Status ||
+		//			newRecord.Index != oldRecord.Index ||
+		//			newRecord.Filledamount != oldRecord.Filledamount) {
+		//			updateErr := dc.DbConnection.Update(&newRecord)
+		//
+		//			if updateErr != nil {
+		//				fmt.Printf("Error occured on update... %v \n", updateErr)
+		//			} else {
+		//				updatedRecordsCount++
+		//			}
+		//
+		//			exists = true
+		//		} else if newRecord.OrderId == oldRecord.OrderId {
+		//			exists = true
+		//			break
+		//		}
+		//	}
+		//
+		//	if !exists {
+		//		recordsToAdd = append(recordsToAdd, newRecord)
+		//	}
+		//}
+		//
+		//dc.DbConnection.Insert(&recordsToAdd)
+		//
+		//fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), updatedRecordsCount)
+		//
 	}
 }
 
@@ -160,7 +205,6 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	maxHeight := minHeightBm.Height + maxRecordsCount
 	index := 1
 	iterationsLimitPerUpdate := 15
-
 
 	for {
 		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
