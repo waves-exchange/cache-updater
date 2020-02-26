@@ -108,6 +108,37 @@ func GetDBCredentials () (string, string, string, string, string) {
 //	return result
 //}
 
+func FetchLastTransactions (address string, lastCount uint, afterId *string) *[][]models.Transaction {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf(
+		"%v/transactions/address/%v/limit/%v",
+		nodeUrl, address, fmt.Sprintf("%v", lastCount),
+	)
+
+	if afterId != nil {
+		connectionUrl += fmt.Sprintf("?after=%v", *afterId)
+	}
+	response, err := http.Get(connectionUrl)
+
+	var txList [][]models.Transaction
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &txList
+	}
+
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return &txList
+	}
+
+	json.Unmarshal(byteValue, &txList)
+	return &txList
+}
+
 func FetchLastBlock () []byte {
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := fmt.Sprintf("%v/blocks/headers/last", nodeUrl)

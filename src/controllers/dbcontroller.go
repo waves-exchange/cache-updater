@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/src/entities"
+	"os"
+	"reflect"
 	"strconv"
 )
 
@@ -94,26 +96,10 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 
 	maxHeightRange := uint64(99)
 	heightDiff := bm.Height - latestExRecord.Height
-
-
 	if heightDiff > maxHeightRange {
 		minH := latestExRecord.Height
 		maxH := minH + maxHeightRange
 
-
-		blockHeadersData := entities.FetchBlocksRange(
-			fmt.Sprintf("%v", minH),
-			fmt.Sprintf("%v", maxH),
-		)
-		for _, blockHeader := range *blockHeadersData {
-			blockInfo := entities.FetchTransactionsOnSpecificBlock(
-				fmt.Sprintf("%v", blockHeader.Height),
-			)
-
-			blockTransactions := blockInfo.Transactions
-
-
-		}
 
 	} else {
 

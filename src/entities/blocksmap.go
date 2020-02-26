@@ -38,10 +38,15 @@ func (bm *BlocksMap) GetBlocksMapByHeight (height string) *BlocksMap {
 }
 
 func (bm *BlocksMap) GetBlocksMapSequenceByRange (heightMin, heightMax string) *[]BlocksMap {
-	var blocksMapArray []BlocksMap
+	blocks := FetchBlocksRange(heightMin, heightMax)
+	blocksMapList := make([]BlocksMap, len(*blocks))
 
-	byteValue := FetchBlocksRange(heightMin, heightMax)
-	_ = json.Unmarshal([]byte(byteValue), &blocksMapArray)
+	for i, block := range *blocks {
+		blocksMapList[i] = BlocksMap{
+			Height: uint64(*block.Height),
+			Timestamp: uint64(*block.Timestamp),
+		}
+	}
 
-	return &blocksMapArray
+	return &blocksMapList
 }
