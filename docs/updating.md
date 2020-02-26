@@ -53,6 +53,8 @@ type DAppEntity interface {
 }
 ```
 
+#### Current refactored appraoch
+
 Updating starts from checking existing records and if they actually exist
 the function delegates responsibility to:
  ```HandleExistingBondsOrdersUpdate```
@@ -93,7 +95,7 @@ func FetchBlocksRange (heightMin, heightMax string) *[]models.BlockHeader {}
 Then, we fetch transaction list for every block, using this function:
 
 ```go
-func FetchTransactionsOnSpecificBlock (height string) *models.Block {
+func FetchTransactionsOnSpecificBlock (height string) *models.Block {}
 ```
 
 We face ```2 * Z * MHR``` count of requests
