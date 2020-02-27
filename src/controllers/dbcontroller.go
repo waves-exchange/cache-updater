@@ -126,10 +126,16 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 				if txType != float64(16) {
 					continue
 				}
+				txId := tx["id"]
 
-				// fmt.Printf("Type: %v \n", reflect.TypeOf(txType))
-				fmt.Printf("Invoke TX: %v\n", tx)
-				fmt.Printf("TX TYPE: %v\n", txType)
+				wrappedStateChanges := entities.FetchStateChanges(txId.(string))
+
+				stateChanges := wrappedStateChanges.StateChanges
+
+				if stateChanges.Data != nil && len(stateChanges.Data) > 0 {
+
+					fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
+				}
 			}
 		}
 

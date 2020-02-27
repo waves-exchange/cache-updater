@@ -233,3 +233,27 @@ func FetchBlocksRange (heightMin, heightMax string) *[]models.BlockHeader {
 
 	return &blocksRange
 }
+
+func FetchStateChanges (txId string) *models.StateChanges {
+	nodeUrl := os.Getenv("NODE_URL")
+	connectionUrl := fmt.Sprintf("%v/debug/stateChanges/info/%v", nodeUrl, txId)
+	response, err := http.Get(connectionUrl)
+
+	var stateChanges models.StateChanges
+
+	if err != nil {
+		fmt.Printf("Error occured on fetch... %v \n", err)
+		return &stateChanges
+	}
+
+	defer response.Body.Close()
+
+	byteValue, readErr := ioutil.ReadAll(response.Body)
+
+	if readErr != nil {
+		return &stateChanges
+	}
+	json.Unmarshal(byteValue, &stateChanges)
+
+	return &stateChanges
+}
