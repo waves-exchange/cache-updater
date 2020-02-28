@@ -3,11 +3,8 @@ package entities
 import (
 	"fmt"
 	"regexp"
-
-	// "regexp"
 	"strconv"
 	"strings"
-	// "reflect"
 	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
@@ -51,22 +48,19 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 }
 
 func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
-	// ids := []string{}
-	// result := []BondsOrder{}
-
 	var ids []string
 	regexKeys := bo.GetKeys(nil)
 	heightKey := regexKeys[0]
 	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-	nodeKeys := []string{}
-	resolveData := make(map[string](map[string]string))
+	var nodeKeys []string
+	resolveData := make(map[string]map[string]string)
 
 	for k, _ := range *nodeData {
 		for _, regexKey := range regexKeys {
 			compiledRegex := regexp.MustCompile(regexKey)
 
 			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
-				continue;
+				continue
 			}
 		}
 		nodeKeys = append(nodeKeys, k)
@@ -101,10 +95,10 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
 		return result
 	}
 
-	raw := BondsOrder{}
+	// raw := BondsOrder{}
 
 	for index, id := range ids {
-		mappedModel := raw.MapItemToModel(id, resolveData[id])
+		mappedModel := bo.MapItemToModel(id, resolveData[id])
 		// result = append(result, mappedModel)
 		result[index] = mappedModel
 	}

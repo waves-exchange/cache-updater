@@ -14,6 +14,9 @@ import (
 type DbController struct {
 	UcDelegate *UpdateController
 	DbConnection *pg.DB
+
+	// Shared instances
+	SharedBondsOrder *entities.BondsOrder
 }
 
 func (dc *DbController) ConnectToDb () {
@@ -61,8 +64,7 @@ func (dc *DbController) HandleRecordsUpdate () {
 	}
 
 	var orderheights []uint64
-	rb := entities.BondsOrder{}
-	bondsorders := rb.UpdateAll(&nodeData)
+	bondsorders := dc.UcDelegate.ScDelegate.BondsOrder.UpdateAll(&nodeData)
 
 	dc.HandleBondsOrdersUpdate(&bondsorders)
 
@@ -111,6 +113,8 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 			fmt.Sprintf("%v", maxH),
 		)
 
+		// emptyKeys :=
+
 		for _, block := range *blocks {
 			blockWithTxList := entities.FetchTransactionsOnSpecificBlock(
 				fmt.Sprintf("%v", *block.Height),
@@ -126,7 +130,9 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 				if txType != float64(16) {
 					continue
 				}
+
 				txId := tx["id"]
+				txSender := tx["sender"].(string)
 
 				wrappedStateChanges := entities.FetchStateChanges(txId.(string))
 
@@ -135,6 +141,14 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 				if stateChanges.Data != nil && len(stateChanges.Data) > 0 {
 
 					fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
+
+					if txSender == "" {
+						continue
+					}
+
+					fmt.Printf("Sender is: %v \n", txSender)
+
+
 				}
 			}
 		}
@@ -238,7 +252,8 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 	minHeightBm := bondsOrders[0]
 	maxHeightBm := bondsOrders[len(bondsOrders) - 1]
 	maxRecordsCount := uint64(99)
-	bm := entities.BlocksMap{}
+	// bm := entities.BlocksMap{}
+	bm := dc.UcDelegate.ScDelegate.BlocksMap
 
 	if len(existingRecords) > 0 {
 		minExRecord := existingRecords[len(existingRecords) - 1]

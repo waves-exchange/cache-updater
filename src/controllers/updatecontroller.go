@@ -9,6 +9,7 @@ import (
 
 type UpdateController struct {
 	DbDelegate *DbController
+	ScDelegate *ShareController
 }
 
 func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
