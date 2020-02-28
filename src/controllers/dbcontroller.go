@@ -14,9 +14,6 @@ import (
 type DbController struct {
 	UcDelegate *UpdateController
 	DbConnection *pg.DB
-
-	// Shared instances
-	SharedBondsOrder *entities.BondsOrder
 }
 
 func (dc *DbController) ConnectToDb () {
@@ -102,69 +99,85 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
 
-	iter := 0
+	dc.UcDelegate.UpdateStateChangedData(latestExRecord, maxHeightRange)
 
-	if true {
-		minH := latestExRecord.Height
-		maxH := minH + maxHeightRange
-
-		blocks := entities.FetchBlocksRange(
-			fmt.Sprintf("%v", minH),
-			fmt.Sprintf("%v", maxH),
-		)
-
-		// emptyKeys :=
-
-		for _, block := range *blocks {
-			blockWithTxList := entities.FetchTransactionsOnSpecificBlock(
-				fmt.Sprintf("%v", *block.Height),
-			)
-			iter++
-
-			// Invoke Script Transaction: 16
-			for _, tx := range blockWithTxList.Transactions {
-				txType := tx["type"]
-				//fmt.Printf("Type is: %v \n", txType)
-
-				// Let only Invoke transactions stay
-				if txType != float64(16) {
-					continue
-				}
-
-				txId := tx["id"]
-				txSender := tx["sender"].(string)
-
-				wrappedStateChanges := entities.FetchStateChanges(txId.(string))
-
-				stateChanges := wrappedStateChanges.StateChanges
-
-				if stateChanges.Data != nil && len(stateChanges.Data) > 0 {
-
-					fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
-
-					if txSender == "" {
-						continue
-					}
-
-					fmt.Printf("Sender is: %v \n", txSender)
-
-
-				}
-			}
-		}
-
-	} else {
-
-	}
-
-	fmt.Printf("Iter: %v \n", iter)
+	//if true {
+	//	minH := latestExRecord.Height
+	//	maxH := minH + maxHeightRange
+	//
+	//	blocks := entities.FetchBlocksRange(
+	//		fmt.Sprintf("%v", minH),
+	//		fmt.Sprintf("%v", maxH),
+	//	)
+	//
+	//	mutableKeys := []string { entities.OrderStatusKey, entities.OrderFilledTotalKey }
+	//	joinedMutableKeys := strings.Join(mutableKeys, "_")
+	//	delimiter := "_"
+	//
+	//	for _, block := range *blocks {
+	//		blockWithTxList := entities.FetchTransactionsOnSpecificBlock(
+	//			fmt.Sprintf("%v", *block.Height),
+	//		)
+	//
+	//		// Invoke Script Transaction: 16
+	//		for _, tx := range blockWithTxList.Transactions {
+	//			txType := tx["type"]
+	//			//fmt.Printf("Type is: %v \n", txType)
+	//
+	//			// Let only Invoke transactions stay
+	//			if txType != float64(16) {
+	//				continue
+	//			}
+	//
+	//			txId := tx["id"]
+	//			txSender := tx["sender"].(string)
+	//
+	//			wrappedStateChanges := entities.FetchStateChanges(txId.(string))
+	//
+	//			stateChanges := wrappedStateChanges.StateChanges
+	//
+	//			if !(stateChanges.Data != nil && len(stateChanges.Data) > 0) {
+	//				return
+	//			}
+	//
+	//			//fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
+	//
+	//			if txSender == "" {
+	//				continue
+	//			}
+	//
+	//			//fmt.Printf("Data: %+v \n", *stateChanges.Data[0])
+	//
+	//			for i, change := range stateChanges.Data {
+	//				changeKey := *(*change).Key
+	//
+	//				splittedKey := strings.Split(changeKey, delimiter)
+	//
+	//				if len(splittedKey) < 3 {
+	//					continue
+	//				}
+	//
+	//				changeKey = strings.Join(splittedKey[:(len(splittedKey) - 1)], delimiter)
+	//
+	//				if !strings.Contains(joinedMutableKeys, changeKey) {
+	//					continue
+	//				}
+	//
+	//				fmt.Printf("Data key immutable part: %v \n", changeKey)
+	//				fmt.Printf("Sender is: %v \n", txSender)
+	//				fmt.Printf("Data #%v: %+v \n", i + 1, *change)
+	//				fmt.Printf("%v , %v , %v \n", *(*change).Key, (*change).Value, *(*change).Type)
+	//			}
+	//		}
+	//	}
+	//
+	//} else {
+	//
+	//}
 }
 
 func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrder) {
 	var existingRecords []entities.BondsOrder
-	//
-	//_, getRecordsErr := dc.DbConnection.
-	//	Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v;", entities.BONDS_ORDERS_NAME))
 	getRecordsErr := dc.GetAllEntityRecords(&existingRecords, entities.BONDS_ORDERS_NAME)
 
 	if getRecordsErr != nil {
@@ -174,56 +187,22 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrd
 	isEmpty := len(existingRecords) == 0
 
 	// Base case when table is empty, just upload and return
-	if isEmpty {
-		fmt.Printf("0 records exist \n")
-		if len(*freshData) == 0 {
-			fmt.Printf("0 new records added \n")
-			return
-		}
+	if !isEmpty {
+		return
+	}
 
-		insertErr := dc.DbConnection.Insert(freshData)
+	fmt.Printf("0 records exist \n")
+	if len(*freshData) == 0 {
+		fmt.Printf("0 new records added \n")
+		return
+	}
 
-		if insertErr != nil {
-			fmt.Printf("Error occured on Insert... %v \n", insertErr)
-		} else {
-			fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
-		}
+	insertErr := dc.DbConnection.Insert(freshData)
+
+	if insertErr != nil {
+		fmt.Printf("Error occured on Insert... %v \n", insertErr)
 	} else {
-		//var recordsToAdd []entities.BondsOrder
-		//updatedRecordsCount := 0
-		//
-		//for _, newRecordRef := range *freshData {
-		//	newRecord := *newRecordRef
-		//	exists := false
-		//	for _, oldRecord := range existingRecords {
-		//		if newRecord.OrderId == oldRecord.OrderId && (
-		//			newRecord.Status != oldRecord.Status ||
-		//			newRecord.Index != oldRecord.Index ||
-		//			newRecord.Filledamount != oldRecord.Filledamount) {
-		//			updateErr := dc.DbConnection.Update(&newRecord)
-		//
-		//			if updateErr != nil {
-		//				fmt.Printf("Error occured on update... %v \n", updateErr)
-		//			} else {
-		//				updatedRecordsCount++
-		//			}
-		//
-		//			exists = true
-		//		} else if newRecord.OrderId == oldRecord.OrderId {
-		//			exists = true
-		//			break
-		//		}
-		//	}
-		//
-		//	if !exists {
-		//		recordsToAdd = append(recordsToAdd, newRecord)
-		//	}
-		//}
-		//
-		//dc.DbConnection.Insert(&recordsToAdd)
-		//
-		//fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), updatedRecordsCount)
-		//
+		fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
 	}
 }
 
@@ -246,13 +225,11 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 		return
 	}
 
-	// freshData := make(chan entities.BlocksMap)
 	var freshData []entities.BlocksMap
 
 	minHeightBm := bondsOrders[0]
 	maxHeightBm := bondsOrders[len(bondsOrders) - 1]
 	maxRecordsCount := uint64(99)
-	// bm := entities.BlocksMap{}
 	bm := dc.UcDelegate.ScDelegate.BlocksMap
 
 	if len(existingRecords) > 0 {
@@ -286,44 +263,6 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 			break
 		}
 	}
-
-	// var wg sync.WaitGroup
-	//for {
-	//	wg.Add(1)
-	//	go func () {
-	//		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
-	//
-	//		if minHeight > maxHeight {
-	//			wg.Done()
-	//			return
-	//		}
-	//
-	//		fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
-	//
-	//		for _, item := range *fetchedBlocksMap {
-	//			freshData<-item
-	//			// freshData = append(freshData, item)
-	//		}
-	//
-	//		minHeight = maxHeight + 1
-	//		maxHeight = maxHeight + maxRecordsCount + 1
-	//
-	//		if maxHeight == maxHeightBm.Height {
-	//			wg.Done()
-	//			return
-	//		}
-	//		if maxHeight > maxHeightBm.Height {
-	//			maxHeight = maxHeightBm.Height
-	//		}
-	//
-	//		index++
-	//
-	//		if index == iterationsLimitPerUpdate {
-	//			wg.Done()
-	//			return
-	//		}
-	//	}()
-	//}
 
 	fmt.Printf("Data len is: %v \n", len(freshData))
 

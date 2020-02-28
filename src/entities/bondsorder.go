@@ -28,6 +28,44 @@ type BondsOrder struct {
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
+// Data Keys in blockchain
+const (
+	OrderHeightKey = "order_height_"
+	OrderOwnerKey = "order_owner"
+	OrderPriceKey = "order_price_"
+	OrderTotalKey = "order_total_"
+	OrderFilledTotalKey = "order_filled_total_"
+	OrderStatusKey = "order_status_"
+	OrderBookKey = "orderbook"
+	DebugOrderRoiKey = "debug_order_roi_"
+	DebugOrderCurrentpriceKey = "debug_order_currentprice_"
+	OrderPrevKey = "order_prev_"
+	OrderNextKey = "order_next_"
+	OrderFirstKey = "order_first"
+)
+
+//func (bo *BondsOrder) GetDatabaseColumnByModelKey (modelKey *string) *string {
+//	var res string
+//
+//	if modelKey == nil {
+//		return &res
+//	}
+//
+//	dict := make(map[string]string)
+//	emptyKey := ""
+//	emptyKeys := bo.GetKeys(&emptyKey)
+//
+//	for _, key := range emptyKeys {
+//		dict[key] = key
+//
+//		if key == OrderStatusKey {
+//
+//		} else if key ==
+//	}
+//
+//	return &res
+//}
+
 func (bo *BondsOrder) GetKeys(regex *string) []string {
 	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
 
@@ -166,11 +204,11 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Height: uint64(height),
 		Price: int(price),
 		Total: total / wavesContractPower,
-		Filledtotal: filledtotal / wavesContractPower,
 		Index: index,
 		Owner: item["order_owner_" + id],
-		Resttotal: (total - filledtotal) / wavesContractPower,
 		Status: status,
+		Resttotal: (total - filledtotal) / wavesContractPower,
+		Filledtotal: filledtotal / wavesContractPower,
 		Amount: total / (float64(price) * wavesContractPower / 100),
 		Filledamount: filledtotal / (float64(price) * wavesContractPower / 100),
 		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / 100),
