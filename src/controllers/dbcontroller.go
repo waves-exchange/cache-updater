@@ -90,7 +90,7 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 	}
 
 	var bm entities.BlocksMap
-	latestExRecord := records[0]
+	latestExRecord := records[len(records) - 1]
 	byteValue := entities.FetchLastBlock()
 	_ = json.Unmarshal([]byte(byteValue), &bm)
 
@@ -98,82 +98,24 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 	heightDiff := bm.Height - latestExRecord.Height
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
+	minH := latestExRecord.Height
+	maxH := minH + maxHeightRange
 
-	dc.UcDelegate.UpdateStateChangedData(latestExRecord, maxHeightRange)
+	if heightDiff > maxHeightRange {
+		for {
+			if minH > bm.Height {
+				break
+			}
 
-	//if true {
-	//	minH := latestExRecord.Height
-	//	maxH := minH + maxHeightRange
-	//
-	//	blocks := entities.FetchBlocksRange(
-	//		fmt.Sprintf("%v", minH),
-	//		fmt.Sprintf("%v", maxH),
-	//	)
-	//
-	//	mutableKeys := []string { entities.OrderStatusKey, entities.OrderFilledTotalKey }
-	//	joinedMutableKeys := strings.Join(mutableKeys, "_")
-	//	delimiter := "_"
-	//
-	//	for _, block := range *blocks {
-	//		blockWithTxList := entities.FetchTransactionsOnSpecificBlock(
-	//			fmt.Sprintf("%v", *block.Height),
-	//		)
-	//
-	//		// Invoke Script Transaction: 16
-	//		for _, tx := range blockWithTxList.Transactions {
-	//			txType := tx["type"]
-	//			//fmt.Printf("Type is: %v \n", txType)
-	//
-	//			// Let only Invoke transactions stay
-	//			if txType != float64(16) {
-	//				continue
-	//			}
-	//
-	//			txId := tx["id"]
-	//			txSender := tx["sender"].(string)
-	//
-	//			wrappedStateChanges := entities.FetchStateChanges(txId.(string))
-	//
-	//			stateChanges := wrappedStateChanges.StateChanges
-	//
-	//			if !(stateChanges.Data != nil && len(stateChanges.Data) > 0) {
-	//				return
-	//			}
-	//
-	//			//fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
-	//
-	//			if txSender == "" {
-	//				continue
-	//			}
-	//
-	//			//fmt.Printf("Data: %+v \n", *stateChanges.Data[0])
-	//
-	//			for i, change := range stateChanges.Data {
-	//				changeKey := *(*change).Key
-	//
-	//				splittedKey := strings.Split(changeKey, delimiter)
-	//
-	//				if len(splittedKey) < 3 {
-	//					continue
-	//				}
-	//
-	//				changeKey = strings.Join(splittedKey[:(len(splittedKey) - 1)], delimiter)
-	//
-	//				if !strings.Contains(joinedMutableKeys, changeKey) {
-	//					continue
-	//				}
-	//
-	//				fmt.Printf("Data key immutable part: %v \n", changeKey)
-	//				fmt.Printf("Sender is: %v \n", txSender)
-	//				fmt.Printf("Data #%v: %+v \n", i + 1, *change)
-	//				fmt.Printf("%v , %v , %v \n", *(*change).Key, (*change).Value, *(*change).Type)
-	//			}
-	//		}
-	//	}
-	//
-	//} else {
-	//
-	//}
+			fmt.Printf("latestExHeight: %v \n", latestExRecord.Height)
+			fmt.Printf("minH: %v, maxH: %v \n", minH, maxH)
+			dc.UcDelegate.UpdateStateChangedData(minH, maxH)
+			minH = maxH + 1
+			maxH = minH + maxHeightRange
+		}
+	} else {
+		dc.UcDelegate.UpdateStateChangedData(minH, maxH)
+	}
 }
 
 func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrder) {

@@ -53,7 +53,7 @@ type DAppEntity interface {
 }
 ```
 
-#### Current refactored appraoch
+#### Current refactored approach
 
 Updating starts from checking existing records and if they actually exist
 the function delegates responsibility to:
@@ -99,3 +99,19 @@ func FetchTransactionsOnSpecificBlock (height string) *models.Block {}
 ```
 
 We face ```2 * Z * MHR``` count of requests
+
+```go
+func (uc *UpdateController) UpdateStateChangedData (
+	minHeight, maxHeight uint64,
+) { ... }	
+```
+
+This method checks and updates BondsOrder entities according to
+state change.
+Also, it checks only "Invoke" transactions (type 16).
+
+#### Approach in filtering
+
+Current method checks if order key is provided, and if so, grabs
+another list of keys trying to map to model:
+```type BondsOrder struct {} ```

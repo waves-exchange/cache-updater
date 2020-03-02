@@ -32,18 +32,17 @@ func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
 	return byteValue, nil
 }
 
-func (uc *UpdateController) UpdateStateChangedData (latestExRecord entities.BondsOrder, maxHeightRange uint64) {
-	minH := latestExRecord.Height
-	maxH := minH + maxHeightRange
+func (uc *UpdateController) UpdateStateChangedData (
+	minHeight, maxHeight uint64,
+) {
+	//minH := latestExRecord.Height
+	//maxH := minH + maxHeightRange
 
 	blocks := entities.FetchBlocksRange(
-		fmt.Sprintf("%v", minH),
-		fmt.Sprintf("%v", maxH),
+		fmt.Sprintf("%v", minHeight),
+		fmt.Sprintf("%v", maxHeight),
 	)
 
-	//mutableKeys := []string { entities.OrderStatusKey, entities.OrderFilledTotalKey }
-	//staticKeys := []string { entities.OrderBookKey, entities.OrderFirstKey }
-	//joinedMutableKeys := strings.Join(mutableKeys, "_")
 	delimiter := "_"
 
 	for _, block := range *blocks {
@@ -54,7 +53,6 @@ func (uc *UpdateController) UpdateStateChangedData (latestExRecord entities.Bond
 		// Invoke Script Transaction: 16
 		for _, tx := range blockWithTxList.Transactions {
 			txType := tx["type"]
-			//fmt.Printf("Type is: %v \n", txType)
 
 			// Let only Invoke transactions stay
 			if txType != float64(16) {
@@ -72,7 +70,7 @@ func (uc *UpdateController) UpdateStateChangedData (latestExRecord entities.Bond
 				return
 			}
 
-			fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
+			fmt.Printf("TX: %v L: %v; StateChange: %v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
 
 			if txSender == "" {
 				continue
@@ -93,6 +91,7 @@ func (uc *UpdateController) UpdateStateChangedData (latestExRecord entities.Bond
 				}
 
 				splittedKey := strings.Split(changeKey, delimiter)
+
 				if len(splittedKey) < 3 {
 					continue
 				}
@@ -101,12 +100,6 @@ func (uc *UpdateController) UpdateStateChangedData (latestExRecord entities.Bond
 				dict := entities.MapStateChangesDataToDict(stateChanges)
 				fmt.Printf("Dict: %v \n", dict)
 				entity := uc.ScDelegate.BondsOrder.MapItemToModel(orderId, dict)
-
-				//updateErr := uc.DbDelegate.DbConnection.Update(entity)
-				//
-				//if updateErr != nil {
-				//	fmt.Printf("Update result: %v \n", updateErr)
-				//}
 
 				fmt.Printf("Entity: %+v \n", entity)
 				fmt.Printf("Data key immutable part: %v \n", changeKey)
