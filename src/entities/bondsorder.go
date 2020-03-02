@@ -38,50 +38,28 @@ const (
 	OrderStatusKey = "order_status_"
 	OrderBookKey = "orderbook"
 	DebugOrderRoiKey = "debug_order_roi_"
-	DebugOrderCurrentpriceKey = "debug_order_currentprice_"
+	DebugOrderCurrentPriceKey = "debug_order_currentPrice_"
 	OrderPrevKey = "order_prev_"
 	OrderNextKey = "order_next_"
 	OrderFirstKey = "order_first"
 )
 
-//func (bo *BondsOrder) GetDatabaseColumnByModelKey (modelKey *string) *string {
-//	var res string
-//
-//	if modelKey == nil {
-//		return &res
-//	}
-//
-//	dict := make(map[string]string)
-//	emptyKey := ""
-//	emptyKeys := bo.GetKeys(&emptyKey)
-//
-//	for _, key := range emptyKeys {
-//		dict[key] = key
-//
-//		if key == OrderStatusKey {
-//
-//		} else if key ==
-//	}
-//
-//	return &res
-//}
-
 func (bo *BondsOrder) GetKeys(regex *string) []string {
 	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
 
 	return []string {
-		"order_height_" + id,
-		"order_owner_" + id,
-		"order_price_" + id,
-		"order_total_" + id,
-		"order_filled_total_" + id,
-		"order_status_" + id,
-		"orderbook",
-		"debug_order_roi_" + id,
-		"debug_order_currentPrice_" + id,
-		"order_prev_" + id,
-		"order_next_" + id,
-		"order_first",
+		OrderHeightKey + id,
+		OrderOwnerKey + id,
+		OrderPriceKey + id,
+		OrderTotalKey + id,
+		OrderFilledTotalKey + id,
+		OrderStatusKey + id,
+		OrderBookKey,
+		DebugOrderRoiKey + id,
+		DebugOrderCurrentPriceKey + id,
+		OrderPrevKey + id,
+		OrderNextKey + id,
+		OrderFirstKey,
 	}
 }
 

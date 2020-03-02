@@ -72,40 +72,50 @@ func (uc *UpdateController) UpdateStateChangedData (latestExRecord entities.Bond
 				return
 			}
 
-			//fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
+			fmt.Printf("TxId: %v Len: %v; StateChange: %+v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
 
 			if txSender == "" {
 				continue
 			}
-
-			//fmt.Printf("Data: %+v \n", *stateChanges.Data[0])
+			if len(stateChanges.Data) != 12 {
+				continue
+			}
 
 			for i, change := range stateChanges.Data {
 				changeKey := *(*change).Key
 
 				if changeKey == entities.OrderBookKey || changeKey == entities.OrderFirstKey {
-					//fmt.Printf("Data key immutable part: %v \n", changeKey)
-					//fmt.Printf("TX ID: %v, Sender is: %v \n", txId, txSender)
-					//
-					//fmt.Printf("Data #%v: %+v \n", i + 1, *change)
-					//fmt.Printf("%v , %v , %v \n", *(*change).Key, (*change).Value, *(*change).Type)
 					continue
+				}
+
+				if !strings.Contains(changeKey, "order") {
+					break
 				}
 
 				splittedKey := strings.Split(changeKey, delimiter)
 				if len(splittedKey) < 3 {
 					continue
 				}
+
+				orderId := splittedKey[len(splittedKey) - 1]
+				dict := entities.MapStateChangesDataToDict(stateChanges)
+				fmt.Printf("Dict: %v \n", dict)
+				entity := uc.ScDelegate.BondsOrder.MapItemToModel(orderId, dict)
+
+				//updateErr := uc.DbDelegate.DbConnection.Update(entity)
 				//
-				//if !strings.Contains(joinedMutableKeys, changeKey) {
-				//	continue
+				//if updateErr != nil {
+				//	fmt.Printf("Update result: %v \n", updateErr)
 				//}
 
+				fmt.Printf("Entity: %+v \n", entity)
 				fmt.Printf("Data key immutable part: %v \n", changeKey)
 				fmt.Printf("TX ID: %v, Sender is: %v \n", txId, txSender)
 
 				fmt.Printf("Data #%v: %+v \n", i + 1, *change)
 				fmt.Printf("%v , %v , %v \n", *(*change).Key, (*change).Value, *(*change).Type)
+
+				break
 			}
 		}
 	}
