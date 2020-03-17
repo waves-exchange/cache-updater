@@ -93,7 +93,7 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 
 	// var bm entities.BlocksMap
 	var lastBlockHeader models.BlockHeader
-	latestExRecord := records[len(records) - 1]
+	latestExRecord := records[0]
 	byteValue := entities.FetchLastBlock()
 	_ = json.Unmarshal([]byte(byteValue), &lastBlockHeader)
 	lastBlockHeaderHeight := uint64(*lastBlockHeader.Height)
@@ -102,7 +102,8 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 	heightDiff := lastBlockHeaderHeight - latestExRecord.Height
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
-	minH := latestExRecord.Height
+	// minH := latestExRecord.Height
+	minH := uint64(1974625)
 	maxH := minH + maxHeightRange
 
 	if heightDiff > maxHeightRange {
@@ -151,6 +152,16 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrd
 	} else {
 		fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
 	}
+}
+
+func (dc *DbController) GetEntityRecordsCount (entity interface{}) (error, int) {
+	var count int
+	_, err := dc.DbConnection.Model(entity).QueryOne(pg.Scan(&count), `
+	    SELECT count(*)
+	    FROM ?TableName AS ?TableAlias
+	`)
+
+	return err, count
 }
 
 func (dc *DbController) HandleBlocksMapUpdate () {

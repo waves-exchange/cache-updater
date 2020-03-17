@@ -49,6 +49,8 @@ func (uc *UpdateController) UpdateStateChangedData (
 			fmt.Sprintf("%v", *block.Height),
 		)
 
+		fmt.Printf("Checking block: %v \n", *block.Height)
+
 		// Invoke Script Transaction: 16
 		for _, tx := range blockWithTxList.Transactions {
 			txType := tx["type"]
@@ -60,6 +62,24 @@ func (uc *UpdateController) UpdateStateChangedData (
 
 			txId := tx["id"]
 			txSender := tx["sender"].(string)
+			txDapp := tx["dApp"].(string)
+			txCall := tx["call"].(map[string]interface{})
+			txCallFunction := txCall["function"]
+
+			if txDapp != os.Getenv("DAPP_ADDRESS") {
+				continue
+			}
+
+			mutateMethodNames := []string{ "addBuyBondOrder", "sellBond", "cancelOrder" }
+
+			isMutateMethod := false
+			for _, methodName := range mutateMethodNames {
+				if methodName == txCallFunction {
+					isMutateMethod = true
+					break
+				}
+			}
+			if !isMutateMethod { continue }
 
 			wrappedStateChanges := entities.FetchStateChanges(txId.(string))
 
@@ -71,15 +91,12 @@ func (uc *UpdateController) UpdateStateChangedData (
 
 			fmt.Printf("TX: %v L: %v; StateChange: %v \n", txId, len(stateChanges.Data), *stateChanges.Data[0])
 
-			if txSender == "" {
-				continue
-			}
-			if len(stateChanges.Data) != 12 {
-				continue
-			}
-
-			for i, change := range stateChanges.Data {
+			for _, change := range stateChanges.Data {
 				changeKey := *(*change).Key
+
+				if *block.Height == 1974626 {
+					fmt.Printf("CHANGE KEY ON BLOCK %v is %v",1974626, changeKey)
+				}
 
 				if changeKey == entities.OrderBookKey || changeKey == entities.OrderFirstKey {
 					continue
@@ -90,24 +107,28 @@ func (uc *UpdateController) UpdateStateChangedData (
 				}
 
 				splittedKey := strings.Split(changeKey, delimiter)
-
 				if len(splittedKey) < 3 {
 					continue
 				}
 
 				orderId := splittedKey[len(splittedKey) - 1]
 				dict := entities.MapStateChangesDataToDict(stateChanges)
-				fmt.Printf("Dict: %v \n", dict)
 				entity := uc.ScDelegate.BondsOrder.MapItemToModel(orderId, dict)
-
-				uc.DbDelegate.DbConnection.Update(entity)
-
 				fmt.Printf("Entity: %+v \n", entity)
-				fmt.Printf("Data key immutable part: %v \n", changeKey)
-				fmt.Printf("TX ID: %v, Sender is: %v \n", txId, txSender)
+				fmt.Printf("Order ID IS: %v \n", entity.OrderId)
 
-				fmt.Printf("Data #%v: %+v \n", i + 1, *change)
-				fmt.Printf("%v , %v , %v \n", *(*change).Key, (*change).Value, *(*change).Type)
+				exists, _ := uc.DbDelegate.DbConnection.Model(entity).Where("order_id = ?", entity.OrderId).Exists()
+
+				if exists {
+					_, updateErr := uc.DbDelegate.DbConnection.Model(entity).
+						Where("order_id = ?", entity.OrderId).
+						Update(entity)
+
+					entities.DefaultErrorHandler(updateErr)
+				} else {
+					insertErr := uc.DbDelegate.DbConnection.Insert(entity)
+					entities.DefaultErrorHandler(insertErr)
+				}
 
 				break
 			}
@@ -123,8 +144,8 @@ func (uc *UpdateController) StartConstantUpdating () {
 	frequency := os.Getenv("UPDATE_FREQUENCY")
 	duration, convErr := strconv.Atoi(frequency)
 
+	entities.DefaultErrorHandler(convErr)
 	if convErr != nil {
-		fmt.Println(convErr)
 		return
 	}
 	duration = int(time.Duration(duration) * time.Millisecond)

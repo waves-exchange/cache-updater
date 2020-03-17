@@ -111,11 +111,8 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
 		return result
 	}
 
-	// raw := BondsOrder{}
-
 	for index, id := range ids {
 		mappedModel := bo.MapItemToModel(id, resolveData[id])
-		// result = append(result, mappedModel)
 		result[index] = mappedModel
 	}
 
