@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type UpdateController struct {
@@ -35,9 +37,6 @@ func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
 func (uc *UpdateController) UpdateStateChangedData (
 	minHeight, maxHeight uint64,
 ) {
-	//minH := latestExRecord.Height
-	//maxH := minH + maxHeightRange
-
 	blocks := entities.FetchBlocksRange(
 		fmt.Sprintf("%v", minHeight),
 		fmt.Sprintf("%v", maxHeight),
@@ -101,6 +100,8 @@ func (uc *UpdateController) UpdateStateChangedData (
 				fmt.Printf("Dict: %v \n", dict)
 				entity := uc.ScDelegate.BondsOrder.MapItemToModel(orderId, dict)
 
+				uc.DbDelegate.DbConnection.Update(entity)
+
 				fmt.Printf("Entity: %+v \n", entity)
 				fmt.Printf("Data key immutable part: %v \n", changeKey)
 				fmt.Printf("TX ID: %v, Sender is: %v \n", txId, txSender)
@@ -116,4 +117,20 @@ func (uc *UpdateController) UpdateStateChangedData (
 
 func (uc *UpdateController) UpdateAllData () {
 	uc.DbDelegate.HandleRecordsUpdate()
+}
+
+func (uc *UpdateController) StartConstantUpdating () {
+	frequency := os.Getenv("UPDATE_FREQUENCY")
+	duration, convErr := strconv.Atoi(frequency)
+
+	if convErr != nil {
+		fmt.Println(convErr)
+		return
+	}
+	duration = int(time.Duration(duration) * time.Millisecond)
+
+	for {
+		uc.UpdateAllData()
+		time.Sleep(time.Duration(duration))
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-pg/pg/v9"
+	"github.com/ventuary-lab/cache-updater/models"
 	"github.com/ventuary-lab/cache-updater/src/entities"
 	//"reflect"
 	//"os"
@@ -38,6 +39,7 @@ func (dc *DbController) HandleRecordsUpdate () {
 
 	if len(existingBondsOrders) != 0 {
 		dc.HandleExistingBondsOrdersUpdate()
+		dc.HandleBlocksMapUpdate()
 		return
 	}
 
@@ -69,7 +71,7 @@ func (dc *DbController) HandleRecordsUpdate () {
 		orderheights = append(orderheights, order.Height)
 	}
 
-	dc.HandleBlocksMapUpdate(&orderheights)
+	dc.HandleBlocksMapUpdate()
 }
 
 func (dc *DbController) GetAllEntityRecords (records interface{}, tableName string) error {
@@ -89,13 +91,15 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 		fmt.Printf("Error on select... %v\n", getRecordsErr)
 	}
 
-	var bm entities.BlocksMap
+	// var bm entities.BlocksMap
+	var lastBlockHeader models.BlockHeader
 	latestExRecord := records[len(records) - 1]
 	byteValue := entities.FetchLastBlock()
-	_ = json.Unmarshal([]byte(byteValue), &bm)
+	_ = json.Unmarshal([]byte(byteValue), &lastBlockHeader)
+	lastBlockHeaderHeight := uint64(*lastBlockHeader.Height)
 
 	maxHeightRange := uint64(99)
-	heightDiff := bm.Height - latestExRecord.Height
+	heightDiff := lastBlockHeaderHeight - latestExRecord.Height
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
 	minH := latestExRecord.Height
@@ -103,12 +107,13 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 
 	if heightDiff > maxHeightRange {
 		for {
-			if minH > bm.Height {
+			if minH > lastBlockHeaderHeight {
 				break
 			}
 
-			fmt.Printf("latestExHeight: %v \n", latestExRecord.Height)
-			fmt.Printf("minH: %v, maxH: %v \n", minH, maxH)
+			//fmt.Printf("latestExHeight: %v \n", latestExRecord.Height)
+			//fmt.Printf("minH: %v, maxH: %v \n", minH, maxH)
+
 			dc.UcDelegate.UpdateStateChangedData(minH, maxH)
 			minH = maxH + 1
 			maxH = minH + maxHeightRange
@@ -148,7 +153,7 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrd
 	}
 }
 
-func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
+func (dc *DbController) HandleBlocksMapUpdate () {
 	var existingRecords []entities.BlocksMap
 	var bondsOrders []entities.BondsOrder
 

@@ -18,5 +18,7 @@ func main () {
 	uc.ScDelegate = shc
 
 	dbc.ConnectToDb()
-	uc.UpdateAllData()
+
+	//uc.UpdateAllData()
+	uc.StartConstantUpdating()
 }
