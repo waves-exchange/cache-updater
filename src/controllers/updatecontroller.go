@@ -61,7 +61,6 @@ func (uc *UpdateController) UpdateStateChangedData (
 			}
 
 			txId := tx["id"]
-			txSender := tx["sender"].(string)
 			txDapp := tx["dApp"].(string)
 			txCall := tx["call"].(map[string]interface{})
 			txCallFunction := txCall["function"]
@@ -94,10 +93,6 @@ func (uc *UpdateController) UpdateStateChangedData (
 			for _, change := range stateChanges.Data {
 				changeKey := *(*change).Key
 
-				if *block.Height == 1974626 {
-					fmt.Printf("CHANGE KEY ON BLOCK %v is %v",1974626, changeKey)
-				}
-
 				if changeKey == entities.OrderBookKey || changeKey == entities.OrderFirstKey {
 					continue
 				}
@@ -112,12 +107,18 @@ func (uc *UpdateController) UpdateStateChangedData (
 				}
 
 				orderId := splittedKey[len(splittedKey) - 1]
+				//
+				//if txCallFunction == "sellBond" {
+				//	return
+				//}
+
 				dict := entities.MapStateChangesDataToDict(stateChanges)
 				entity := uc.ScDelegate.BondsOrder.MapItemToModel(orderId, dict)
 				fmt.Printf("Entity: %+v \n", entity)
-				fmt.Printf("Order ID IS: %v \n", entity.OrderId)
 
 				exists, _ := uc.DbDelegate.DbConnection.Model(entity).Where("order_id = ?", entity.OrderId).Exists()
+
+				fmt.Printf("Order exists: %v \n", exists)
 
 				if exists {
 					_, updateErr := uc.DbDelegate.DbConnection.Model(entity).
@@ -140,6 +141,14 @@ func (uc *UpdateController) UpdateAllData () {
 	uc.DbDelegate.HandleRecordsUpdate()
 }
 
+func (uc *UpdateController) RecursiveUpdate (timeout time.Duration) {
+	uc.UpdateAllData()
+
+	time.Sleep(timeout)
+
+	uc.RecursiveUpdate(timeout)
+}
+
 func (uc *UpdateController) StartConstantUpdating () {
 	frequency := os.Getenv("UPDATE_FREQUENCY")
 	duration, convErr := strconv.Atoi(frequency)
@@ -150,8 +159,5 @@ func (uc *UpdateController) StartConstantUpdating () {
 	}
 	duration = int(time.Duration(duration) * time.Millisecond)
 
-	for {
-		uc.UpdateAllData()
-		time.Sleep(time.Duration(duration))
-	}
+	uc.RecursiveUpdate(time.Duration(duration))
 }

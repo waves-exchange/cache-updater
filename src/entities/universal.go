@@ -9,15 +9,15 @@ import (
 
 	//"strconv"
 )
-type DAappNumberRecord struct {
-	Key, Type string
-	Value *int
-}
-
-type DAppStringRecord struct {
-	Key, Type string
-	Value *string
-}
+//type DAappNumberRecord struct {
+//	Key, Type string
+//	Value *int
+//}
+//
+//type DAppStringRecord struct {
+//	Key, Type string
+//	Value *string
+//}
 
 func unwrapDefaultRegex (rawregex *string, defaultRegex string) string {
 	if rawregex == nil {

@@ -6,10 +6,6 @@ import (
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/models"
 	"github.com/ventuary-lab/cache-updater/src/entities"
-	//"reflect"
-	//"os"
-	//"reflect"
-	"strconv"
 )
 
 type DbController struct {
@@ -31,8 +27,7 @@ func (dc *DbController) ConnectToDb () {
 }
 
 func (dc *DbController) HandleRecordsUpdate () {
-	var records []entities.DAppStringRecord
-	var numberRecords []entities.DAappNumberRecord
+	var records []map[string]interface{}
 
 	var existingBondsOrders []entities.BondsOrder
 	_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
@@ -44,22 +39,22 @@ func (dc *DbController) HandleRecordsUpdate () {
 	}
 
 	byteValue, _ := dc.UcDelegate.GrabAllAddressData()
-
 	json.Unmarshal([]byte(byteValue), &records)
-	json.Unmarshal([]byte(byteValue), &numberRecords)
 
 	nodeData := map[string]string{}
 
 	for i := 0; i < len(records); i++ {
 		record := records[i]
 
-		if *record.Value == "" {
-			numberRecord := numberRecords[i]
+		key := record["key"].(string)
+		valueType := record["type"].(string)
+		rawValue := record["value"]
 
-			*record.Value = strconv.Itoa(*numberRecord.Value)
+		if valueType == "integer" {
+			nodeData[key] = fmt.Sprintf("%v", int(rawValue.(float64)))
+		} else if valueType == "string" {
+			nodeData[key] = rawValue.(string)
 		}
-
-		nodeData[record.Key] = *record.Value
 	}
 
 	var orderheights []uint64
@@ -102,8 +97,8 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 	heightDiff := lastBlockHeaderHeight - latestExRecord.Height
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
-	// minH := latestExRecord.Height
-	minH := uint64(1974625)
+	minH := latestExRecord.Height
+	//minH := uint64(1974625)
 	maxH := minH + maxHeightRange
 
 	if heightDiff > maxHeightRange {
@@ -111,9 +106,6 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 			if minH > lastBlockHeaderHeight {
 				break
 			}
-
-			//fmt.Printf("latestExHeight: %v \n", latestExRecord.Height)
-			//fmt.Printf("minH: %v, maxH: %v \n", minH, maxH)
 
 			dc.UcDelegate.UpdateStateChangedData(minH, maxH)
 			minH = maxH + 1

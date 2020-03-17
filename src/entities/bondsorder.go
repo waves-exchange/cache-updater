@@ -31,7 +31,7 @@ type BondsOrder struct {
 // Data Keys in blockchain
 const (
 	OrderHeightKey = "order_height_"
-	OrderOwnerKey = "order_owner"
+	OrderOwnerKey = "order_owner_"
 	OrderPriceKey = "order_price_"
 	OrderTotalKey = "order_total_"
 	OrderFilledTotalKey = "order_filled_total_"
@@ -132,17 +132,17 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
 }
 
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
-	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
-	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
-	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
-	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filled_total_" + id], 64)
-	status := item["order_status_" + id]
-	orderROI, _ := strconv.ParseInt(item["debug_order_roi_" + id], 10, 64)
-	orderPrice, _ := strconv.ParseInt(item["debug_order_currentPrice_" + id], 10, 64)
-	rawOrderPrev := item["order_prev_" + id]
-    rawOrderNext := item["order_next_" + id]
+	height, _ := strconv.ParseInt(item[OrderHeightKey + id], 10, 64)
+	price, priceErr := strconv.ParseInt(item[OrderPriceKey + id], 10, 64)
+	total, totalErr := strconv.ParseFloat(item[OrderTotalKey + id], 64)
+	filledtotal, filledTotalErr := strconv.ParseFloat(item[OrderFilledTotalKey + id], 64)
+	status := item[OrderStatusKey + id]
+	orderROI, _ := strconv.ParseInt(item[DebugOrderRoiKey + id], 10, 64)
+	orderPrice, _ := strconv.ParseInt(item[DebugOrderCurrentPriceKey + id], 10, 64)
+	rawOrderPrev := item[OrderPrevKey + id]
+    rawOrderNext := item[OrderNextKey + id]
     var orderPrev, orderNext *string
-	firstOrderId := item["order_first"]
+	firstOrderId := item[OrderFirstKey]
 
 	orderNext = nil
 	if rawOrderNext != "" {
@@ -164,7 +164,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	}
 
 	var index *int = nil
-	orderbook := strings.Split(item["orderbook"], "_")
+	orderbook := strings.Split(item[OrderBookKey], "_")
 	for orderbookindex, orderbookpos := range orderbook {
 		if orderbookpos == id {
 			index = &orderbookindex
@@ -180,7 +180,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Price: int(price),
 		Total: total / wavesContractPower,
 		Index: index,
-		Owner: item["order_owner_" + id],
+		Owner: item[OrderOwnerKey + id],
 		Status: status,
 		Resttotal: (total - filledtotal) / wavesContractPower,
 		Filledtotal: filledtotal / wavesContractPower,
