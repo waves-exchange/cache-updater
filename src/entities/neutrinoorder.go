@@ -17,9 +17,6 @@ type NeutrinoOrder struct {
 	OrderNext *string `pg:"order_next"`
 	RestTotal int64 `pg:"resttotal"`
 	Total int64 `pg:"total"`
-	// Status enums.OrderStatusEnum
-	// Type enums.OrderTypeEnum
-
 	IsFirst bool `pg:"is_first"`
 	IsLast bool `pg:"is_last"`
 }
@@ -76,6 +73,7 @@ func (no *NeutrinoOrder) MapItemToModel (id string, item map[string]string) *Neu
 	if rawOrderPrev == "" { orderPrev = nil } else { orderPrev = &rawOrderPrev }
 
 	return &NeutrinoOrder{
+		OrderId: &id,
 		Height: uint64(height),
 		Currency: &currency,
 		Owner: &owner,

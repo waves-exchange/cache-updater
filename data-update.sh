@@ -39,6 +39,7 @@ run_go_build_recursively () {
     then
         touch "$log_file"
     fi
+    # shellcheck disable=SC2059
     printf "$(date +"%D %T") " >> "$log_file"
     ./cache-updater >> "$log_file"
 
