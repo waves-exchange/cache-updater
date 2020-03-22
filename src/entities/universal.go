@@ -5,6 +5,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/ventuary-lab/cache-updater/swagger-types/models"
 	"os"
+	"regexp"
+
 	//"strconv"
 
 	//"strconv"
@@ -46,6 +48,64 @@ func GetDBCredentials () (string, string, string, string, string) {
 	dbdatabase := os.Getenv("DB_NAME")
 
 	return dbhost, dbport, dbuser, dbpass, dbdatabase
+}
+
+func UpdateAll (nodeData *map[string]string, GetKeys func(*string)[]string) ([]string, map[string]map[string]string, error) {
+	var ids []string
+	regexKeys := GetKeys(nil)
+	heightKey := regexKeys[0]
+	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+	var nodeKeys []string
+	resolveData := make(map[string]map[string]string)
+
+	for k, _ := range *nodeData {
+		for _, regexKey := range regexKeys {
+			compiledRegex := regexp.MustCompile(regexKey)
+
+			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+				continue
+			}
+		}
+		nodeKeys = append(nodeKeys, k)
+	}
+
+	for _, k := range nodeKeys {
+		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
+
+		if len(heightRegexSubmatches) < 2 {
+			continue
+		}
+
+		matchedAddress := string(heightRegexSubmatches[1])
+
+		if matchedAddress != "" {
+			ids = append(ids, matchedAddress)
+			resolveData[matchedAddress] = map[string]string{}
+			validKeys := GetKeys(&matchedAddress)
+
+			for _, validKey := range validKeys {
+				for _, k := range nodeKeys {
+					if k == validKey {
+						resolveData[matchedAddress][k] = (*nodeData)[k]
+					}
+				}
+			}
+		}
+	}
+
+	return ids, resolveData, heightRegexErr
+	//
+	//result := make([]*BondsOrder, len(ids))
+	//if heightRegexErr != nil {
+	//	return result
+	//}
+	//
+	//for index, id := range ids {
+	//	mappedModel := bo.MapItemToModel(id, resolveData[id])
+	//	result[index] = mappedModel
+	//}
+	//
+	//return result
 }
 
 func MapStateChangesDataToDict (stateChanges *models.StateChangesStateChanges) map[string]string {

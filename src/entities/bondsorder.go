@@ -2,10 +2,9 @@ package entities
 
 import (
 	"fmt"
-	"regexp"
+	"github.com/ventuary-lab/cache-updater/src/constants"
 	"strconv"
 	"strings"
-	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
 const BONDS_ORDERS_NAME = "f_bonds_orders"
@@ -64,52 +63,8 @@ func (bo *BondsOrder) GetKeys(regex *string) []string {
 }
 
 func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
-	var ids []string
-	regexKeys := bo.GetKeys(nil)
-	heightKey := regexKeys[0]
-	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-	var nodeKeys []string
-	resolveData := make(map[string]map[string]string)
-
-	for k, _ := range *nodeData {
-		for _, regexKey := range regexKeys {
-			compiledRegex := regexp.MustCompile(regexKey)
-
-			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
-				continue
-			}
-		}
-		nodeKeys = append(nodeKeys, k)
-	}
-
-	for _, k := range nodeKeys {
-		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
-
-		if len(heightRegexSubmatches) < 2 {
-			continue
-		}
-
-		matchedAddress := string(heightRegexSubmatches[1])
-
-		if matchedAddress != "" {
-			ids = append(ids, matchedAddress)
-			resolveData[matchedAddress] = map[string]string{}
-			validKeys := bo.GetKeys(&matchedAddress)
-
-			for _, validKey := range validKeys {
-				for _, k := range nodeKeys {
-					if k == validKey {
-						resolveData[matchedAddress][k] = (*nodeData)[k]
-					}
-				}
-			}
-		}
-	}
-
+	ids, resolveData, _ := UpdateAll(nodeData, bo.GetKeys)
 	result := make([]*BondsOrder, len(ids))
-	if heightRegexErr != nil {
-		return result
-	}
 
 	for index, id := range ids {
 		mappedModel := bo.MapItemToModel(id, resolveData[id])
@@ -118,6 +73,62 @@ func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
 
 	return result
 }
+
+//func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
+//	var ids []string
+//	regexKeys := bo.GetKeys(nil)
+//	heightKey := regexKeys[0]
+//	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+//	var nodeKeys []string
+//	resolveData := make(map[string]map[string]string)
+//
+//	for k, _ := range *nodeData {
+//		for _, regexKey := range regexKeys {
+//			compiledRegex := regexp.MustCompile(regexKey)
+//
+//			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+//				continue
+//			}
+//		}
+//		nodeKeys = append(nodeKeys, k)
+//	}
+//
+//	for _, k := range nodeKeys {
+//		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
+//
+//		if len(heightRegexSubmatches) < 2 {
+//			continue
+//		}
+//
+//		matchedAddress := string(heightRegexSubmatches[1])
+//
+//		if matchedAddress != "" {
+//			ids = append(ids, matchedAddress)
+//			resolveData[matchedAddress] = map[string]string{}
+//			validKeys := bo.GetKeys(&matchedAddress)
+//
+//			for _, validKey := range validKeys {
+//				for _, k := range nodeKeys {
+//					if k == validKey {
+//						resolveData[matchedAddress][k] = (*nodeData)[k]
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	result := make([]*BondsOrder, len(ids))
+//	if heightRegexErr != nil {
+//		return result
+//	}
+//
+//	for index, id := range ids {
+//		mappedModel := bo.MapItemToModel(id, resolveData[id])
+//		result[index] = mappedModel
+//	}
+//
+//	return result
+//}
 
 func (bo *BondsOrder) UpdateItem () {}
 
