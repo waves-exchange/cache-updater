@@ -31,12 +31,14 @@ func (dc *DbController) HandleRecordsUpdate () {
 
 	var existingBondsOrders []entities.BondsOrder
 	_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
+	fmt.Printf("Existing orders count: %v \n", len(existingBondsOrders))
 
-	if len(existingBondsOrders) != 0 {
-		dc.HandleExistingBondsOrdersUpdate()
-		dc.HandleBlocksMapUpdate()
-		return
-	}
+	//
+	//if len(existingBondsOrders) != 0 {
+	//	dc.HandleExistingBondsOrdersUpdate()
+	//	dc.HandleBlocksMapUpdate()
+	//	return
+	//}
 
 	byteValue, _ := dc.UcDelegate.GrabAllAddressData()
 	json.Unmarshal([]byte(byteValue), &records)
@@ -86,7 +88,6 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 		fmt.Printf("Error on select... %v\n", getRecordsErr)
 	}
 
-	// var bm entities.BlocksMap
 	var lastBlockHeader models.BlockHeader
 	latestExRecord := records[0]
 	byteValue := entities.FetchLastBlock()

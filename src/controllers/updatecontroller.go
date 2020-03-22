@@ -107,11 +107,6 @@ func (uc *UpdateController) UpdateStateChangedData (
 				}
 
 				orderId := splittedKey[len(splittedKey) - 1]
-				//
-				//if txCallFunction == "sellBond" {
-				//	return
-				//}
-
 				dict := entities.MapStateChangesDataToDict(stateChanges)
 				entity := uc.ScDelegate.BondsOrder.MapItemToModel(orderId, dict)
 				fmt.Printf("Entity: %+v \n", entity)
