@@ -12,6 +12,7 @@ func main () {
 	shc := &controllers.ShareController{}
 	shc.BondsOrder = &entities.BondsOrder{}
 	shc.BlocksMap = &entities.BlocksMap{}
+	shc.NeutrinoOrder = &entities.NeutrinoOrder{}
 
 	dbc.UcDelegate = uc
 	uc.DbDelegate = dbc

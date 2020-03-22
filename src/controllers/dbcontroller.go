@@ -27,13 +27,10 @@ func (dc *DbController) ConnectToDb () {
 }
 
 func (dc *DbController) HandleRecordsUpdate () {
-	var records []map[string]interface{}
-
 	var existingBondsOrders []entities.BondsOrder
 	_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
 	fmt.Printf("Existing orders count: %v \n", len(existingBondsOrders))
 
-	//
 	//if len(existingBondsOrders) != 0 {
 	//	dc.HandleExistingBondsOrdersUpdate()
 	//	dc.HandleBlocksMapUpdate()
@@ -41,33 +38,13 @@ func (dc *DbController) HandleRecordsUpdate () {
 	//}
 
 	byteValue, _ := dc.UcDelegate.GrabAllAddressData()
-	json.Unmarshal([]byte(byteValue), &records)
+	nodeData := entities.MapNodeDataToDict(byteValue)
 
-	nodeData := map[string]string{}
+	bondsOrders := dc.UcDelegate.ScDelegate.BondsOrder.UpdateAll(&nodeData)
+	neutrinoOrders := dc.UcDelegate.ScDelegate.NeutrinoOrder.UpdateAll(&nodeData)
 
-	for i := 0; i < len(records); i++ {
-		record := records[i]
-
-		key := record["key"].(string)
-		valueType := record["type"].(string)
-		rawValue := record["value"]
-
-		if valueType == "integer" {
-			nodeData[key] = fmt.Sprintf("%v", int(rawValue.(float64)))
-		} else if valueType == "string" {
-			nodeData[key] = rawValue.(string)
-		}
-	}
-
-	var orderheights []uint64
-	bondsorders := dc.UcDelegate.ScDelegate.BondsOrder.UpdateAll(&nodeData)
-
-	dc.HandleBondsOrdersUpdate(&bondsorders)
-
-	for _, order := range bondsorders {
-		orderheights = append(orderheights, order.Height)
-	}
-
+	dc.HandleBondsOrdersUpdate(&bondsOrders)
+	dc.HandleNeutrinoOrdersUpdate(&neutrinoOrders)
 	dc.HandleBlocksMapUpdate()
 }
 
@@ -114,6 +91,36 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 		}
 	} else {
 		dc.UcDelegate.UpdateStateChangedData(minH, maxH)
+	}
+}
+
+func (dc *DbController) HandleNeutrinoOrdersUpdate (freshData *[]*entities.NeutrinoOrder) {
+	var existingRecords []entities.NeutrinoOrder
+	getRecordsErr := dc.GetAllEntityRecords(&existingRecords, entities.NEUTRINO_ORDERS_NAME)
+
+	if getRecordsErr != nil {
+		return
+	}
+
+	isEmpty := len(existingRecords) == 0
+
+	// Base case when table is empty, just upload and return
+	if !isEmpty {
+		return
+	}
+
+	fmt.Printf("0 records exist \n")
+	if len(*freshData) == 0 {
+		fmt.Printf("0 new records added \n")
+		return
+	}
+
+	insertErr := dc.DbConnection.Insert(freshData)
+
+	if insertErr != nil {
+		fmt.Printf("Error occured on Insert... %v \n", insertErr)
+	} else {
+		fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
 	}
 }
 

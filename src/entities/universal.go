@@ -6,10 +6,7 @@ import (
 	"github.com/ventuary-lab/cache-updater/swagger-types/models"
 	"os"
 	"regexp"
-
-	//"strconv"
-
-	//"strconv"
+	"encoding/json"
 )
 //type DAappNumberRecord struct {
 //	Key, Type string
@@ -48,6 +45,29 @@ func GetDBCredentials () (string, string, string, string, string) {
 	dbdatabase := os.Getenv("DB_NAME")
 
 	return dbhost, dbport, dbuser, dbpass, dbdatabase
+}
+
+func MapNodeDataToDict (addressData []byte) map[string]string {
+	var records []map[string]interface{}
+	json.Unmarshal([]byte(addressData), &records)
+
+	nodeData := map[string]string{}
+
+	for i := 0; i < len(records); i++ {
+		record := records[i]
+
+		key := record["key"].(string)
+		valueType := record["type"].(string)
+		rawValue := record["value"]
+
+		if valueType == "integer" {
+			nodeData[key] = fmt.Sprintf("%v", int(rawValue.(float64)))
+		} else if valueType == "string" {
+			nodeData[key] = rawValue.(string)
+		}
+	}
+
+	return nodeData
 }
 
 func UpdateAll (nodeData *map[string]string, GetKeys func(*string)[]string) ([]string, map[string]map[string]string, error) {
