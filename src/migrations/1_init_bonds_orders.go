@@ -1,4 +1,4 @@
-package main;
+package main
 
 import (
 	"fmt"
@@ -35,6 +35,7 @@ func init () {
 					order_next text,
 					order_prev text,
 					is_first bool,
+					confirmed_status unco
 					order_id text PRIMARY KEY
 				);
 				`, TABLE_NAME))

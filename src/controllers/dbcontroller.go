@@ -4,11 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-pg/pg/v9"
+	"github.com/ventuary-lab/cache-updater/models"
 	"github.com/ventuary-lab/cache-updater/src/entities"
-	//"reflect"
-	//"os"
-	//"reflect"
-	"strconv"
 )
 
 type DbController struct {
@@ -30,47 +27,25 @@ func (dc *DbController) ConnectToDb () {
 }
 
 func (dc *DbController) HandleRecordsUpdate () {
-	var records []entities.DAppStringRecord
-	var numberRecords []entities.DAappNumberRecord
-
 	var existingBondsOrders []entities.BondsOrder
 	_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
+	fmt.Printf("Existing orders count: %v \n", len(existingBondsOrders))
 
-	if len(existingBondsOrders) != 0 {
-		dc.HandleExistingBondsOrdersUpdate()
-		return
-	}
+	//if len(existingBondsOrders) != 0 {
+	//	dc.HandleExistingBondsOrdersUpdate()
+	//	dc.HandleBlocksMapUpdate()
+	//	return
+	//}
 
 	byteValue, _ := dc.UcDelegate.GrabAllAddressData()
+	nodeData := entities.MapNodeDataToDict(byteValue)
 
-	json.Unmarshal([]byte(byteValue), &records)
-	json.Unmarshal([]byte(byteValue), &numberRecords)
+	bondsOrders := dc.UcDelegate.ScDelegate.BondsOrder.UpdateAll(&nodeData)
+	neutrinoOrders := dc.UcDelegate.ScDelegate.NeutrinoOrder.UpdateAll(&nodeData)
 
-	nodeData := map[string]string{}
-
-	for i := 0; i < len(records); i++ {
-		record := records[i]
-
-		if *record.Value == "" {
-			numberRecord := numberRecords[i]
-
-			*record.Value = strconv.Itoa(*numberRecord.Value)
-		}
-
-		nodeData[record.Key] = *record.Value
-	}
-
-	var orderheights []uint64
-	rb := entities.BondsOrder{}
-	bondsorders := rb.UpdateAll(&nodeData)
-
-	dc.HandleBondsOrdersUpdate(&bondsorders)
-
-	for _, order := range bondsorders {
-		orderheights = append(orderheights, order.Height)
-	}
-
-	dc.HandleBlocksMapUpdate(&orderheights)
+	dc.HandleBondsOrdersUpdate(&bondsOrders)
+	dc.HandleNeutrinoOrdersUpdate(&neutrinoOrders)
+	dc.HandleBlocksMapUpdate()
 }
 
 func (dc *DbController) GetAllEntityRecords (records interface{}, tableName string) error {
@@ -90,61 +65,67 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 		fmt.Printf("Error on select... %v\n", getRecordsErr)
 	}
 
-	var bm entities.BlocksMap
+	var lastBlockHeader models.BlockHeader
 	latestExRecord := records[0]
 	byteValue := entities.FetchLastBlock()
-	_ = json.Unmarshal([]byte(byteValue), &bm)
+	_ = json.Unmarshal([]byte(byteValue), &lastBlockHeader)
+	lastBlockHeaderHeight := uint64(*lastBlockHeader.Height)
 
 	maxHeightRange := uint64(99)
-	heightDiff := bm.Height - latestExRecord.Height
+	heightDiff := lastBlockHeaderHeight - latestExRecord.Height
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
+	minH := latestExRecord.Height
+	//minH := uint64(1974625)
+	maxH := minH + maxHeightRange
 
-	iter := 0
-
-	if true {
-		minH := latestExRecord.Height
-		maxH := minH + maxHeightRange
-
-		blocks := entities.FetchBlocksRange(
-			fmt.Sprintf("%v", minH),
-			fmt.Sprintf("%v", maxH),
-		)
-
-		for _, block := range *blocks {
-			blockWithTxList := entities.FetchTransactionsOnSpecificBlock(
-				fmt.Sprintf("%v", *block.Height),
-			)
-			iter++
-
-			// Invoke Script Transaction: 16
-			for _, tx := range blockWithTxList.Transactions {
-				txType := tx["type"]
-				//fmt.Printf("Type is: %v \n", txType)
-
-				// Let only Invoke transactions stay
-				if txType != float64(16) {
-					continue
-				}
-
-				// fmt.Printf("Type: %v \n", reflect.TypeOf(txType))
-				fmt.Printf("Invoke TX: %v\n", tx)
-				fmt.Printf("TX TYPE: %v\n", txType)
+	if heightDiff > maxHeightRange {
+		for {
+			if minH > lastBlockHeaderHeight {
+				break
 			}
+
+			dc.UcDelegate.UpdateStateChangedData(minH, maxH)
+			minH = maxH + 1
+			maxH = minH + maxHeightRange
 		}
-
 	} else {
+		dc.UcDelegate.UpdateStateChangedData(minH, maxH)
+	}
+}
 
+func (dc *DbController) HandleNeutrinoOrdersUpdate (freshData *[]*entities.NeutrinoOrder) {
+	var existingRecords []entities.NeutrinoOrder
+	getRecordsErr := dc.GetAllEntityRecords(&existingRecords, entities.NEUTRINO_ORDERS_NAME)
+
+	if getRecordsErr != nil {
+		return
 	}
 
-	fmt.Printf("Iter: %v \n", iter)
+	isEmpty := len(existingRecords) == 0
+
+	// Base case when table is empty, just upload and return
+	if !isEmpty {
+		return
+	}
+
+	fmt.Printf("0 records exist \n")
+	if len(*freshData) == 0 {
+		fmt.Printf("0 new records added \n")
+		return
+	}
+
+	insertErr := dc.DbConnection.Insert(freshData)
+
+	if insertErr != nil {
+		fmt.Printf("Error occured on Insert... %v \n", insertErr)
+	} else {
+		fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
+	}
 }
 
 func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrder) {
 	var existingRecords []entities.BondsOrder
-	//
-	//_, getRecordsErr := dc.DbConnection.
-	//	Query(&existingRecords, fmt.Sprintf("SELECT * FROM %v;", entities.BONDS_ORDERS_NAME))
 	getRecordsErr := dc.GetAllEntityRecords(&existingRecords, entities.BONDS_ORDERS_NAME)
 
 	if getRecordsErr != nil {
@@ -154,60 +135,36 @@ func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrd
 	isEmpty := len(existingRecords) == 0
 
 	// Base case when table is empty, just upload and return
-	if isEmpty {
-		fmt.Printf("0 records exist \n")
-		if len(*freshData) == 0 {
-			fmt.Printf("0 new records added \n")
-			return
-		}
+	if !isEmpty {
+		return
+	}
 
-		insertErr := dc.DbConnection.Insert(freshData)
+	fmt.Printf("0 records exist \n")
+	if len(*freshData) == 0 {
+		fmt.Printf("0 new records added \n")
+		return
+	}
 
-		if insertErr != nil {
-			fmt.Printf("Error occured on Insert... %v \n", insertErr)
-		} else {
-			fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
-		}
+	insertErr := dc.DbConnection.Insert(freshData)
+
+	if insertErr != nil {
+		fmt.Printf("Error occured on Insert... %v \n", insertErr)
 	} else {
-		//var recordsToAdd []entities.BondsOrder
-		//updatedRecordsCount := 0
-		//
-		//for _, newRecordRef := range *freshData {
-		//	newRecord := *newRecordRef
-		//	exists := false
-		//	for _, oldRecord := range existingRecords {
-		//		if newRecord.OrderId == oldRecord.OrderId && (
-		//			newRecord.Status != oldRecord.Status ||
-		//			newRecord.Index != oldRecord.Index ||
-		//			newRecord.Filledamount != oldRecord.Filledamount) {
-		//			updateErr := dc.DbConnection.Update(&newRecord)
-		//
-		//			if updateErr != nil {
-		//				fmt.Printf("Error occured on update... %v \n", updateErr)
-		//			} else {
-		//				updatedRecordsCount++
-		//			}
-		//
-		//			exists = true
-		//		} else if newRecord.OrderId == oldRecord.OrderId {
-		//			exists = true
-		//			break
-		//		}
-		//	}
-		//
-		//	if !exists {
-		//		recordsToAdd = append(recordsToAdd, newRecord)
-		//	}
-		//}
-		//
-		//dc.DbConnection.Insert(&recordsToAdd)
-		//
-		//fmt.Printf("Added %v, Updated %v rows... \n", len(recordsToAdd), updatedRecordsCount)
-		//
+		fmt.Printf("Successfully inserted %v rows \n", len(*freshData))
 	}
 }
 
-func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
+func (dc *DbController) GetEntityRecordsCount (entity interface{}) (error, int) {
+	var count int
+	_, err := dc.DbConnection.Model(entity).QueryOne(pg.Scan(&count), `
+	    SELECT count(*)
+	    FROM ?TableName AS ?TableAlias
+	`)
+
+	return err, count
+}
+
+func (dc *DbController) HandleBlocksMapUpdate () {
 	var existingRecords []entities.BlocksMap
 	var bondsOrders []entities.BondsOrder
 
@@ -226,13 +183,12 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 		return
 	}
 
-	// freshData := make(chan entities.BlocksMap)
 	var freshData []entities.BlocksMap
 
 	minHeightBm := bondsOrders[0]
 	maxHeightBm := bondsOrders[len(bondsOrders) - 1]
 	maxRecordsCount := uint64(99)
-	bm := entities.BlocksMap{}
+	bm := dc.UcDelegate.ScDelegate.BlocksMap
 
 	if len(existingRecords) > 0 {
 		minExRecord := existingRecords[len(existingRecords) - 1]
@@ -265,44 +221,6 @@ func (dc *DbController) HandleBlocksMapUpdate (heightarr *[]uint64) {
 			break
 		}
 	}
-
-	// var wg sync.WaitGroup
-	//for {
-	//	wg.Add(1)
-	//	go func () {
-	//		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
-	//
-	//		if minHeight > maxHeight {
-	//			wg.Done()
-	//			return
-	//		}
-	//
-	//		fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
-	//
-	//		for _, item := range *fetchedBlocksMap {
-	//			freshData<-item
-	//			// freshData = append(freshData, item)
-	//		}
-	//
-	//		minHeight = maxHeight + 1
-	//		maxHeight = maxHeight + maxRecordsCount + 1
-	//
-	//		if maxHeight == maxHeightBm.Height {
-	//			wg.Done()
-	//			return
-	//		}
-	//		if maxHeight > maxHeightBm.Height {
-	//			maxHeight = maxHeightBm.Height
-	//		}
-	//
-	//		index++
-	//
-	//		if index == iterationsLimitPerUpdate {
-	//			wg.Done()
-	//			return
-	//		}
-	//	}()
-	//}
 
 	fmt.Printf("Data len is: %v \n", len(freshData))
 

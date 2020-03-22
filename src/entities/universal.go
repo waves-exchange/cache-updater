@@ -1,23 +1,22 @@
 package entities
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/ventuary-lab/cache-updater/swagger-types/models"
-	"io/ioutil"
-	"net/http"
 	"os"
+	"regexp"
+	"encoding/json"
 )
-type DAappNumberRecord struct {
-	Key, Type string
-	Value *int
-}
-
-type DAppStringRecord struct {
-	Key, Type string
-	Value *string
-}
+//type DAappNumberRecord struct {
+//	Key, Type string
+//	Value *int
+//}
+//
+//type DAppStringRecord struct {
+//	Key, Type string
+//	Value *string
+//}
 
 func unwrapDefaultRegex (rawregex *string, defaultRegex string) string {
 	if rawregex == nil {
@@ -48,188 +47,120 @@ func GetDBCredentials () (string, string, string, string, string) {
 	return dbhost, dbport, dbuser, dbpass, dbdatabase
 }
 
-//func CollectionUpdateAll(
-//	nodeData *map[string]string,
-//	GetKeys func(*string) []string,
-//	MapItemToModel func(string, map[string]string) interface{},
-//) []interface{} {
-//	var ids []string
-//	regexKeys := GetKeys(nil)
-//	heightKey := regexKeys[0]
-//	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-//	var nodeKeys []string
-//	resolveData := make(map[string]map[string]string)
-//
-//	for k, _ := range *nodeData {
-//		for _, regexKey := range regexKeys {
-//			compiledRegex := regexp.MustCompile(regexKey)
-//
-//			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
-//				continue
-//			}
-//		}
-//		nodeKeys = append(nodeKeys, k)
-//	}
-//
-//	for _, k := range nodeKeys {
-//		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
-//
-//		if len(heightRegexSubmatches) < 2 {
-//			continue
-//		}
-//
-//		matchedAddress := string(heightRegexSubmatches[1])
-//
-//		if matchedAddress != "" {
-//			ids = append(ids, matchedAddress)
-//			resolveData[matchedAddress] = map[string]string{}
-//			validKeys := GetKeys(&matchedAddress)
-//
-//			for _, validKey := range validKeys {
-//				for _, k := range nodeKeys {
-//					if k == validKey {
-//						resolveData[matchedAddress][k] = (*nodeData)[k]
-//					}
-//				}
-//			}
-//		}
-//	}
-//
-//	if heightRegexErr != nil {
-//		return make([]interface{}, 0)
-//	}
-//
-//	result := make([]interface{}, len(ids))
-//	for i, id := range ids {
-//		mappedModel := MapItemToModel(id, resolveData[id])
-//		result[i] = mappedModel
-//	}
-//
-//	return result
-//}
+func MapNodeDataToDict (addressData []byte) map[string]string {
+	var records []map[string]interface{}
+	json.Unmarshal([]byte(addressData), &records)
 
-func FetchLastTransactions (address string, lastCount uint, afterId *string) *[][]models.Transaction {
-	nodeUrl := os.Getenv("NODE_URL")
-	connectionUrl := fmt.Sprintf(
-		"%v/transactions/address/%v/limit/%v",
-		nodeUrl, address, fmt.Sprintf("%v", lastCount),
-	)
+	nodeData := map[string]string{}
 
-	if afterId != nil {
-		connectionUrl += fmt.Sprintf("?after=%v", *afterId)
-	}
-	response, err := http.Get(connectionUrl)
+	for i := 0; i < len(records); i++ {
+		record := records[i]
 
-	var txList [][]models.Transaction
+		key := record["key"].(string)
+		valueType := record["type"].(string)
+		rawValue := record["value"]
 
-	if err != nil {
-		fmt.Printf("Error occured on fetch... %v \n", err)
-		return &txList
+		if valueType == "integer" {
+			nodeData[key] = fmt.Sprintf("%v", int(rawValue.(float64)))
+		} else if valueType == "string" {
+			nodeData[key] = rawValue.(string)
+		}
 	}
 
-	defer response.Body.Close()
-
-	byteValue, readErr := ioutil.ReadAll(response.Body)
-
-	if readErr != nil {
-		return &txList
-	}
-
-	json.Unmarshal(byteValue, &txList)
-	return &txList
+	return nodeData
 }
 
-func FetchLastBlock () []byte {
-	nodeUrl := os.Getenv("NODE_URL")
-	connectionUrl := fmt.Sprintf("%v/blocks/headers/last", nodeUrl)
-	response, err := http.Get(connectionUrl)
+func UpdateAll (nodeData *map[string]string, GetKeys func(*string)[]string) ([]string, map[string]map[string]string, error) {
+	var ids []string
+	regexKeys := GetKeys(nil)
+	heightKey := regexKeys[0]
+	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+	var nodeKeys []string
+	resolveData := make(map[string]map[string]string)
 
-	if err != nil {
-		fmt.Printf("Error occured on fetch... %v \n", err)
-		return make([]byte, 0)
+	for k, _ := range *nodeData {
+		for _, regexKey := range regexKeys {
+			compiledRegex := regexp.MustCompile(regexKey)
+
+			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+				continue
+			}
+		}
+		nodeKeys = append(nodeKeys, k)
 	}
 
-	defer response.Body.Close()
+	for _, k := range nodeKeys {
+		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
 
-	byteValue, readErr := ioutil.ReadAll(response.Body)
+		if len(heightRegexSubmatches) < 2 {
+			continue
+		}
 
-	if readErr != nil {
-		return make([]byte, 0)
+		matchedAddress := string(heightRegexSubmatches[1])
+
+		if matchedAddress != "" {
+			ids = append(ids, matchedAddress)
+			resolveData[matchedAddress] = map[string]string{}
+			validKeys := GetKeys(&matchedAddress)
+
+			for _, validKey := range validKeys {
+				for _, k := range nodeKeys {
+					if k == validKey {
+						resolveData[matchedAddress][k] = (*nodeData)[k]
+					}
+				}
+			}
+		}
 	}
 
-	return byteValue
+	return ids, resolveData, heightRegexErr
+	//
+	//result := make([]*BondsOrder, len(ids))
+	//if heightRegexErr != nil {
+	//	return result
+	//}
+	//
+	//for index, id := range ids {
+	//	mappedModel := bo.MapItemToModel(id, resolveData[id])
+	//	result[index] = mappedModel
+	//}
+	//
+	//return result
 }
 
-func FetchBlocksRangeByAddress(address, heightMin, heightMax string) *[]models.Block {
-	nodeUrl := os.Getenv("NODE_URL")
-	connectionUrl := fmt.Sprintf("%v/blocks/address/%v/%v/%v", nodeUrl, address, heightMin, heightMax)
-	response, err := http.Get(connectionUrl)
+func MapStateChangesDataToDict (stateChanges *models.StateChangesStateChanges) map[string]string {
+	res := make(map[string]string)
+	//res := make(map[string]interface{})
 
-	var blocksRange []models.Block
+	for _, change := range stateChanges.Data {
+		key := *change.Key
 
-	if err != nil {
-		fmt.Printf("Error occured on fetch... %v \n", err)
-		return &blocksRange
+		// Enum: [integer boolean binary string]
+		valueType := *change.Type
+
+		if valueType == "integer" {
+			res[key] = fmt.Sprintf("%v", change.Value.(float64))
+		}
+		if valueType == "string" {
+			res[key] = change.Value.(string)
+		}
+		if valueType == "boolean" {
+			if change.Value.(bool) {
+				res[key] = "true"
+			} else {
+				res[key] = "false"
+			}
+		}
+		//res[key] = change.Value.(string)
+		//res[key] = strconv.Itoa(change.Value)
 	}
 
-	defer response.Body.Close()
-
-	byteValue, readErr := ioutil.ReadAll(response.Body)
-
-	if readErr != nil {
-		return &blocksRange
-	}
-
-	json.Unmarshal(byteValue, &blocksRange)
-	return &blocksRange
+	return res
 }
 
-func FetchTransactionsOnSpecificBlock (height string) *models.Block {
-	nodeUrl := os.Getenv("NODE_URL")
-	connectionUrl := fmt.Sprintf("%v/blocks/at/%v", nodeUrl, height)
-	response, err := http.Get(connectionUrl)
-
-	var block models.Block
-
+func DefaultErrorHandler (err error) {
 	if err != nil {
-		fmt.Printf("Error occured on fetch... %v \n", err)
-		return &block
+		fmt.Printf("Error occured. %v \n", err)
 	}
-
-	defer response.Body.Close()
-
-	byteValue, readErr := ioutil.ReadAll(response.Body)
-
-	if readErr != nil {
-		return &block
-	}
-
-	json.Unmarshal(byteValue, &block)
-
-	return &block
 }
 
-func FetchBlocksRange (heightMin, heightMax string) *[]models.BlockHeader {
-	nodeUrl := os.Getenv("NODE_URL")
-	connectionUrl := fmt.Sprintf("%v/blocks/headers/seq/%v/%v", nodeUrl, heightMin, heightMax)
-	response, err := http.Get(connectionUrl)
-
-	var blocksRange []models.BlockHeader
-
-	if err != nil {
-		fmt.Printf("Error occured on fetch... %v \n", err)
-		return &blocksRange
-	}
-
-	defer response.Body.Close()
-
-	byteValue, readErr := ioutil.ReadAll(response.Body)
-
-	if readErr != nil {
-		return &blocksRange
-	}
-
-	json.Unmarshal(byteValue, &blocksRange)
-
-	return &blocksRange
-}

@@ -1,22 +1,24 @@
-package entities;
+package entities
 
 import (
 	"strconv"
 	// "github.com/ventuary-lab/cache-updater/enums"
 )
 
-type NeutrinoOrder struct {
-	DAppEntity
+const NEUTRINO_ORDERS_NAME = "f_neutrino_orders"
 
+type NeutrinoOrder struct {
 	tableName struct{} `pg:"f_neutrino_orders"`
 
-	Currency, Owner, status, Type, Order_id string
+	OrderId *string `pg:"order_id,pk"`
+	Currency, Owner, Status, Type *string
 	Height uint64
-	Ordernext, Orderprev *string
-	Resttotal, Total int64
-	// Status enums.OrderStatusEnum
-	// Type enums.OrderTypeEnum
-	Isfirst, Islast bool
+	OrderPrev *string `pg:"order_prev"`
+	OrderNext *string `pg:"order_next"`
+	RestTotal int64 `pg:"resttotal"`
+	Total int64 `pg:"total"`
+	IsFirst bool `pg:"is_first"`
+	IsLast bool `pg:"is_last"`
 }
 
 func (no *NeutrinoOrder) GetKeys(regex *string) []string {
@@ -34,6 +36,18 @@ func (no *NeutrinoOrder) GetKeys(regex *string) []string {
 		"order_first",
 		"order_last",
 	}
+}
+
+func (no *NeutrinoOrder) UpdateAll (nodeData *map[string]string) []*NeutrinoOrder {
+	ids, resolveData, _ := UpdateAll(nodeData, no.GetKeys)
+	result := make([]*NeutrinoOrder, len(ids))
+
+	for index, id := range ids {
+		mappedModel := no.MapItemToModel(id, resolveData[id])
+		result[index] = mappedModel
+	}
+
+	return result
 }
 
 func (no *NeutrinoOrder) MapItemToModel (id string, item map[string]string) *NeutrinoOrder {
@@ -59,16 +73,17 @@ func (no *NeutrinoOrder) MapItemToModel (id string, item map[string]string) *Neu
 	if rawOrderPrev == "" { orderPrev = nil } else { orderPrev = &rawOrderPrev }
 
 	return &NeutrinoOrder{
+		OrderId: &id,
 		Height: uint64(height),
-		Currency: currency,
-		Owner: owner,
+		Currency: &currency,
+		Owner: &owner,
 		Total: total,
-		status: status,
-		Resttotal: total - filledtotal,
-		Type: orderType,
-		Ordernext: orderNext,
-		Orderprev: orderPrev,
-		Isfirst: id == item["order_first"],
-		Islast: id == item["order_last"],
+		Status: &status,
+		RestTotal: total - filledtotal,
+		Type: &orderType,
+		OrderNext: orderNext,
+		OrderPrev: orderPrev,
+		IsFirst: id == item["order_first"],
+		IsLast: id == item["order_last"],
 	}
 }

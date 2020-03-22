@@ -2,13 +2,9 @@ package entities
 
 import (
 	"fmt"
-	"regexp"
-
-	// "regexp"
+	"github.com/ventuary-lab/cache-updater/src/constants"
 	"strconv"
 	"strings"
-	// "reflect"
-	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
 const BONDS_ORDERS_NAME = "f_bonds_orders"
@@ -31,86 +27,108 @@ type BondsOrder struct {
 	Total, Filledamount, Filledtotal, Resttotal, Amount, Restamount float64
 }
 
+// Data Keys in blockchain
+const (
+	OrderHeightKey = "order_height_"
+	OrderOwnerKey = "order_owner_"
+	OrderPriceKey = "order_price_"
+	OrderTotalKey = "order_total_"
+	OrderFilledTotalKey = "order_filled_total_"
+	OrderStatusKey = "order_status_"
+	OrderBookKey = "orderbook"
+	DebugOrderRoiKey = "debug_order_roi_"
+	DebugOrderCurrentPriceKey = "debug_order_currentPrice_"
+	OrderPrevKey = "order_prev_"
+	OrderNextKey = "order_next_"
+	OrderFirstKey = "order_first"
+)
+
 func (bo *BondsOrder) GetKeys(regex *string) []string {
 	id := unwrapDefaultRegex(regex, "([A-Za-z0-9]{40,50})")
 
 	return []string {
-		"order_height_" + id,
-		"order_owner_" + id,
-		"order_price_" + id,
-		"order_total_" + id,
-		"order_filled_total_" + id,
-		"order_status_" + id,
-		"orderbook",
-		"debug_order_roi_" + id,
-		"debug_order_currentPrice_" + id,
-		"order_prev_" + id,
-		"order_next_" + id,
-		"order_first",
+		OrderHeightKey + id,
+		OrderOwnerKey + id,
+		OrderPriceKey + id,
+		OrderTotalKey + id,
+		OrderFilledTotalKey + id,
+		OrderStatusKey + id,
+		OrderBookKey,
+		DebugOrderRoiKey + id,
+		DebugOrderCurrentPriceKey + id,
+		OrderPrevKey + id,
+		OrderNextKey + id,
+		OrderFirstKey,
 	}
 }
 
 func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
-	// ids := []string{}
-	// result := []BondsOrder{}
-
-	var ids []string
-	regexKeys := bo.GetKeys(nil)
-	heightKey := regexKeys[0]
-	heightRegex, heightRegexErr := regexp.Compile(heightKey)
-	nodeKeys := []string{}
-	resolveData := make(map[string](map[string]string))
-
-	for k, _ := range *nodeData {
-		for _, regexKey := range regexKeys {
-			compiledRegex := regexp.MustCompile(regexKey)
-
-			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
-				continue;
-			}
-		}
-		nodeKeys = append(nodeKeys, k)
-	}
-
-	for _, k := range nodeKeys {
-		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
-
-		if len(heightRegexSubmatches) < 2 {
-			continue
-		}
-
-		matchedAddress := string(heightRegexSubmatches[1])
-
-		if matchedAddress != "" {
-			ids = append(ids, matchedAddress)
-			resolveData[matchedAddress] = map[string]string{}
-			validKeys := bo.GetKeys(&matchedAddress)
-
-			for _, validKey := range validKeys {
-				for _, k := range nodeKeys {
-					if k == validKey {
-						resolveData[matchedAddress][k] = (*nodeData)[k]
-					}
-				}
-			}
-		}
-	}
-
+	ids, resolveData, _ := UpdateAll(nodeData, bo.GetKeys)
 	result := make([]*BondsOrder, len(ids))
-	if heightRegexErr != nil {
-		return result
-	}
-
-	raw := BondsOrder{}
 
 	for index, id := range ids {
-		mappedModel := raw.MapItemToModel(id, resolveData[id])
-		// result = append(result, mappedModel)
+		mappedModel := bo.MapItemToModel(id, resolveData[id])
 		result[index] = mappedModel
 	}
 
 	return result
 }
+
+//func (bo *BondsOrder) UpdateAll (nodeData *map[string]string) []*BondsOrder {
+//	var ids []string
+//	regexKeys := bo.GetKeys(nil)
+//	heightKey := regexKeys[0]
+//	heightRegex, heightRegexErr := regexp.Compile(heightKey)
+//	var nodeKeys []string
+//	resolveData := make(map[string]map[string]string)
+//
+//	for k, _ := range *nodeData {
+//		for _, regexKey := range regexKeys {
+//			compiledRegex := regexp.MustCompile(regexKey)
+//
+//			if len(compiledRegex.FindSubmatch([]byte(k))) == 0 {
+//				continue
+//			}
+//		}
+//		nodeKeys = append(nodeKeys, k)
+//	}
+//
+//	for _, k := range nodeKeys {
+//		heightRegexSubmatches := heightRegex.FindSubmatch([]byte(k))
+//
+//		if len(heightRegexSubmatches) < 2 {
+//			continue
+//		}
+//
+//		matchedAddress := string(heightRegexSubmatches[1])
+//
+//		if matchedAddress != "" {
+//			ids = append(ids, matchedAddress)
+//			resolveData[matchedAddress] = map[string]string{}
+//			validKeys := bo.GetKeys(&matchedAddress)
+//
+//			for _, validKey := range validKeys {
+//				for _, k := range nodeKeys {
+//					if k == validKey {
+//						resolveData[matchedAddress][k] = (*nodeData)[k]
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	result := make([]*BondsOrder, len(ids))
+//	if heightRegexErr != nil {
+//		return result
+//	}
+//
+//	for index, id := range ids {
+//		mappedModel := bo.MapItemToModel(id, resolveData[id])
+//		result[index] = mappedModel
+//	}
+//
+//	return result
+//}
 
 func (bo *BondsOrder) UpdateItem () {}
 
@@ -125,17 +143,17 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
 }
 
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
-	height, _ := strconv.ParseInt(item["order_height_" + id], 10, 64)
-	price, priceErr := strconv.ParseInt(item["order_price_" + id], 10, 64)
-	total, totalErr := strconv.ParseFloat(item["order_total_" + id], 64)
-	filledtotal, filledTotalErr := strconv.ParseFloat(item["order_filled_total_" + id], 64)
-	status := item["order_status_" + id]
-	orderROI, _ := strconv.ParseInt(item["debug_order_roi_" + id], 10, 64)
-	orderPrice, _ := strconv.ParseInt(item["debug_order_currentPrice_" + id], 10, 64)
-	rawOrderPrev := item["order_prev_" + id]
-    rawOrderNext := item["order_next_" + id]
+	height, _ := strconv.ParseInt(item[OrderHeightKey + id], 10, 64)
+	price, priceErr := strconv.ParseInt(item[OrderPriceKey + id], 10, 64)
+	total, totalErr := strconv.ParseFloat(item[OrderTotalKey + id], 64)
+	filledtotal, filledTotalErr := strconv.ParseFloat(item[OrderFilledTotalKey + id], 64)
+	status := item[OrderStatusKey + id]
+	orderROI, _ := strconv.ParseInt(item[DebugOrderRoiKey + id], 10, 64)
+	orderPrice, _ := strconv.ParseInt(item[DebugOrderCurrentPriceKey + id], 10, 64)
+	rawOrderPrev := item[OrderPrevKey + id]
+    rawOrderNext := item[OrderNextKey + id]
     var orderPrev, orderNext *string
-	firstOrderId := item["order_first"]
+	firstOrderId := item[OrderFirstKey]
 
 	orderNext = nil
 	if rawOrderNext != "" {
@@ -157,7 +175,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	}
 
 	var index *int = nil
-	orderbook := strings.Split(item["orderbook"], "_")
+	orderbook := strings.Split(item[OrderBookKey], "_")
 	for orderbookindex, orderbookpos := range orderbook {
 		if orderbookpos == id {
 			index = &orderbookindex
@@ -172,11 +190,11 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Height: uint64(height),
 		Price: int(price),
 		Total: total / wavesContractPower,
-		Filledtotal: filledtotal / wavesContractPower,
 		Index: index,
-		Owner: item["order_owner_" + id],
-		Resttotal: (total - filledtotal) / wavesContractPower,
+		Owner: item[OrderOwnerKey + id],
 		Status: status,
+		Resttotal: (total - filledtotal) / wavesContractPower,
+		Filledtotal: filledtotal / wavesContractPower,
 		Amount: total / (float64(price) * wavesContractPower / 100),
 		Filledamount: filledtotal / (float64(price) * wavesContractPower / 100),
 		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / 100),
