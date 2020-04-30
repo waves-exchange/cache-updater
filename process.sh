@@ -23,7 +23,7 @@ build_only () {
     PermissionsStartOnly=true
     StandardOutput=syslog
     StandardError=syslog
-    SyslogIdentifier=awesome_micro_service
+    SyslogIdentifier=$service_name
     [Install]
     WantedBy=multi-user.target
   " > "$file"
