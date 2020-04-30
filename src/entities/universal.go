@@ -8,15 +8,6 @@ import (
 	"regexp"
 	"encoding/json"
 )
-//type DAappNumberRecord struct {
-//	Key, Type string
-//	Value *int
-//}
-//
-//type DAppStringRecord struct {
-//	Key, Type string
-//	Value *string
-//}
 
 func unwrapDefaultRegex (rawregex *string, defaultRegex string) string {
 	if rawregex == nil {
@@ -114,18 +105,6 @@ func UpdateAll (nodeData *map[string]string, GetKeys func(*string)[]string) ([]s
 	}
 
 	return ids, resolveData, heightRegexErr
-	//
-	//result := make([]*BondsOrder, len(ids))
-	//if heightRegexErr != nil {
-	//	return result
-	//}
-	//
-	//for index, id := range ids {
-	//	mappedModel := bo.MapItemToModel(id, resolveData[id])
-	//	result[index] = mappedModel
-	//}
-	//
-	//return result
 }
 
 func MapStateChangesDataToDict (stateChanges *models.StateChangesStateChanges) map[string]string {
@@ -151,8 +130,6 @@ func MapStateChangesDataToDict (stateChanges *models.StateChangesStateChanges) m
 				res[key] = "false"
 			}
 		}
-		//res[key] = change.Value.(string)
-		//res[key] = strconv.Itoa(change.Value)
 	}
 
 	return res

@@ -31,12 +31,6 @@ func (dc *DbController) HandleRecordsUpdate () {
 	_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
 	fmt.Printf("Existing orders count: %v \n", len(existingBondsOrders))
 
-	//if len(existingBondsOrders) != 0 {
-	//	dc.HandleExistingBondsOrdersUpdate()
-	//	dc.HandleBlocksMapUpdate()
-	//	return
-	//}
-
 	byteValue, _ := dc.UcDelegate.GrabAllAddressData()
 	nodeData := entities.MapNodeDataToDict(byteValue)
 
@@ -76,7 +70,6 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 
 	fmt.Printf("heightDiff: %v\n", heightDiff)
 	minH := latestExRecord.Height
-	//minH := uint64(1974625)
 	maxH := minH + maxHeightRange
 
 	if heightDiff > maxHeightRange {

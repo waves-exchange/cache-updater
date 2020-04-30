@@ -4,19 +4,26 @@
 
 # first arg - service name
 service_name="neutrino-cache-daemon"
-daemon_fl="data-update.sh"
 
 build_only () {
   file="$service_name.service"
   echo "
     [Unit]
-    Description=Neutrino cache update daemon
+    Description=Neutrino Cache Updater
+    After=network.target
 
     [Service]
-    ExecStart=$PWD/$daemon_fl --pwd $PWD
+    Type=simple
     Restart=on-failure
-    RestartSec=3
+    RestartSec=10
+    startLimitIntervalSec=60
 
+    WorkingDirectory=$PWD
+    ExecStart=$PWD/cache-updater
+    PermissionsStartOnly=true
+    StandardOutput=syslog
+    StandardError=syslog
+    SyslogIdentifier=$service_name
     [Install]
     WantedBy=multi-user.target
   " > "$file"
