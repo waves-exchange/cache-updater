@@ -1,26 +1,20 @@
 #!/bin/bash
 
-# inner variables
-address="3PG2vMhK5CPqsCDodvLGzQ84QkoHXCJ3oNP"
-node_url="https://nodes.wavesplatform.com/addresses/data"
-save_endpoint="scriptdata.test.json"
-
 # script params
 update_freq=5s
 redo_migrate=0
 log_file=/var/www/pg_update_logs.txt
-current_pid=?
-
-raw_update_data () {
-    curl -X GET --header 'Accept: application/json' "$node_url/$address" > "$save_endpoint"
-}
 
 init_migration () {
     go run src/migrations/*.go init
 }
 
-run_go_migrations () {
+reset_go_migrations () {
     go run src/migrations/*.go reset
+}
+
+run_go_migrations () {
+    reset_go_migrations
     go run src/migrations/*.go up
 }
 
@@ -34,40 +28,21 @@ run_go_build () {
     ./cache-updater
 }
 
-run_go_build_recursively () {
-    if [ -z "$log_file" ]
-    then
-        touch "$log_file"
-    fi
-    # shellcheck disable=SC2059
-    printf "$(date +"%D %T") " >> "$log_file"
-    ./cache-updater >> "$log_file"
-
-    sleep $update_freq;
-
-    run_go_build_recursively
-}
-
 main () {
-    args=$@
     source ~/.bash_profile
 
     while [ -n "$1" ]
     do
         case "$1" in
             --frequency) update_freq=$2 ;;
+            --reset-migration) reset_go_migrations ;;
+            --run-migration) run_go_migrations ;;
             --init-migration) init_migration ;;
             --redo-migration) redo_migrate=1 ;;
             --log-file) log_file=$2 ;;
-            --pwd ) PWD=$2 ;;
         esac
         shift;
     done
-
-    cd $PWD
-
-    run_go_build
-    run_go_build_recursively
 }
 
 main "$@"

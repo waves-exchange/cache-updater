@@ -4,7 +4,6 @@
 
 # first arg - service name
 service_name="neutrino-cache-daemon"
-daemon_fl="data-update.sh"
 
 build_only () {
   file="$service_name.service"
@@ -13,7 +12,7 @@ build_only () {
     Description=Neutrino cache update daemon
 
     [Service]
-    ExecStart=$PWD/$daemon_fl --pwd $PWD
+    ExecStart=$PWD/$daemon_fl 
     Restart=on-failure
     RestartSec=3
 
