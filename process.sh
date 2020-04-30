@@ -9,13 +9,21 @@ build_only () {
   file="$service_name.service"
   echo "
     [Unit]
-    Description=Neutrino cache update daemon
+    Description=Neutrino Cache Updater
+    After=network.target
 
     [Service]
-    ExecStart=$PWD/$daemon_fl 
+    Type=simple
     Restart=on-failure
-    RestartSec=3
+    RestartSec=10
+    startLimitIntervalSec=60
 
+    WorkingDirectory=$PWD
+    ExecStart=$PWD/cache-updater
+    PermissionsStartOnly=true
+    StandardOutput=syslog
+    StandardError=syslog
+    SyslogIdentifier=awesome_micro_service
     [Install]
     WantedBy=multi-user.target
   " > "$file"
