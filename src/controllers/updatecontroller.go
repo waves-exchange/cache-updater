@@ -2,13 +2,14 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/ventuary-lab/cache-updater/src/entities"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ventuary-lab/cache-updater/src/entities"
 )
 
 type UpdateController struct {
@@ -16,7 +17,7 @@ type UpdateController struct {
 	ScDelegate *ShareController
 }
 
-func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
+func (uc *UpdateController) GrabAllAddressData() ([]byte, error) {
 	dAppAddress := os.Getenv("DAPP_ADDRESS")
 	nodeUrl := os.Getenv("NODE_URL")
 	connectionUrl := nodeUrl + "/addresses/data/" + dAppAddress
@@ -34,7 +35,7 @@ func (uc *UpdateController) GrabAllAddressData () ([]byte, error) {
 	return byteValue, nil
 }
 
-func (uc *UpdateController) UpdateStateChangedData (
+func (uc *UpdateController) UpdateStateChangedData(
 	minHeight, maxHeight uint64,
 ) {
 	blocks := entities.FetchBlocksRange(
@@ -69,7 +70,7 @@ func (uc *UpdateController) UpdateStateChangedData (
 				continue
 			}
 
-			mutateMethodNames := []string{ "addBuyBondOrder", "sellBond", "cancelOrder" }
+			mutateMethodNames := []string{"addBuyBondOrder", "sellBond", "cancelOrder"}
 
 			isMutateMethod := false
 			for _, methodName := range mutateMethodNames {
@@ -78,7 +79,9 @@ func (uc *UpdateController) UpdateStateChangedData (
 					break
 				}
 			}
-			if !isMutateMethod { continue }
+			if !isMutateMethod {
+				continue
+			}
 
 			wrappedStateChanges := entities.FetchStateChanges(txId.(string))
 
@@ -106,7 +109,7 @@ func (uc *UpdateController) UpdateStateChangedData (
 					continue
 				}
 
-				orderId := splittedKey[len(splittedKey) - 1]
+				orderId := splittedKey[len(splittedKey)-1]
 				dict := entities.MapStateChangesDataToDict(stateChanges)
 				entity := uc.ScDelegate.BondsOrder.MapItemToModel(orderId, dict)
 				fmt.Printf("Entity: %+v \n", entity)
@@ -132,19 +135,11 @@ func (uc *UpdateController) UpdateStateChangedData (
 	}
 }
 
-func (uc *UpdateController) UpdateAllData () {
+func (uc *UpdateController) UpdateAllData() {
 	uc.DbDelegate.HandleRecordsUpdate()
 }
 
-func (uc *UpdateController) RecursiveUpdate (timeout time.Duration) {
-	uc.UpdateAllData()
-
-	time.Sleep(timeout)
-
-	uc.RecursiveUpdate(timeout)
-}
-
-func (uc *UpdateController) StartConstantUpdating () {
+func (uc *UpdateController) StartConstantUpdating() {
 	frequency := os.Getenv("UPDATE_FREQUENCY")
 	duration, convErr := strconv.Atoi(frequency)
 
@@ -152,7 +147,9 @@ func (uc *UpdateController) StartConstantUpdating () {
 	if convErr != nil {
 		return
 	}
-	duration = int(time.Duration(duration) * time.Millisecond)
 
-	uc.RecursiveUpdate(time.Duration(duration))
+	for {
+		uc.UpdateAllData()
+		time.Sleep(time.Duration(duration) * time.Millisecond)
+	}
 }
