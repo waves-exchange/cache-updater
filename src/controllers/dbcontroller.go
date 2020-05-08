@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/models"
 	"github.com/ventuary-lab/cache-updater/src/entities"
@@ -27,10 +28,6 @@ func (dc *DbController) ConnectToDb () {
 }
 
 func (dc *DbController) HandleRecordsUpdate () {
-	var existingBondsOrders []entities.BondsOrder
-	_ = dc.GetAllEntityRecords(&existingBondsOrders, entities.BONDS_ORDERS_NAME)
-	fmt.Printf("Existing orders count: %v \n", len(existingBondsOrders))
-
 	byteValue, _ := dc.UcDelegate.GrabAllAddressData()
 	nodeData := entities.MapNodeDataToDict(byteValue)
 
@@ -88,26 +85,18 @@ func (dc *DbController) HandleExistingBondsOrdersUpdate () {
 }
 
 func (dc *DbController) HandleNeutrinoOrdersUpdate (freshData *[]*entities.NeutrinoOrder) {
-	var existingRecords []entities.NeutrinoOrder
-	getRecordsErr := dc.GetAllEntityRecords(&existingRecords, entities.NEUTRINO_ORDERS_NAME)
-
-	if getRecordsErr != nil {
-		return
-	}
-
-	isEmpty := len(existingRecords) == 0
-
-	// Base case when table is empty, just upload and return
-	if !isEmpty {
-		return
-	}
-
-	fmt.Printf("0 records exist \n")
 	if len(*freshData) == 0 {
 		fmt.Printf("0 new records added \n")
 		return
 	}
 
+	_, dropRecordsErr := dc.DbConnection.
+		Query(nil, fmt.Sprintf("DELETE FROM %v;", entities.NEUTRINO_ORDERS_NAME))
+	if dropRecordsErr != nil {
+		fmt.Printf("Error on drop all neutrino orders records... %v;", dropRecordsErr)
+		return
+	}
+	
 	insertErr := dc.DbConnection.Insert(freshData)
 
 	if insertErr != nil {
@@ -118,23 +107,15 @@ func (dc *DbController) HandleNeutrinoOrdersUpdate (freshData *[]*entities.Neutr
 }
 
 func (dc *DbController) HandleBondsOrdersUpdate (freshData *[]*entities.BondsOrder) {
-	var existingRecords []entities.BondsOrder
-	getRecordsErr := dc.GetAllEntityRecords(&existingRecords, entities.BONDS_ORDERS_NAME)
-
-	if getRecordsErr != nil {
-		return
-	}
-
-	isEmpty := len(existingRecords) == 0
-
-	// Base case when table is empty, just upload and return
-	if !isEmpty {
-		return
-	}
-
-	fmt.Printf("0 records exist \n")
 	if len(*freshData) == 0 {
 		fmt.Printf("0 new records added \n")
+		return
+	}
+
+	_, dropRecordsErr := dc.DbConnection.
+		Query(nil, fmt.Sprintf("DELETE FROM %v;", entities.BONDS_ORDERS_NAME))
+	if dropRecordsErr != nil {
+		fmt.Printf("Error on drop all bonds orders records... %v;", dropRecordsErr)
 		return
 	}
 
