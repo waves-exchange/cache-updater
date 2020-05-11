@@ -1,0 +1,11 @@
+[Unit]
+Description=Neutrino cache update daemon
+
+[Service]
+ExecStart=/var/www/cache-updater/cache-updater --frequency 5s
+WorkingDirectory=/var/www/cache-updater
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
