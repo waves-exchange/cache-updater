@@ -2,9 +2,10 @@ package entities
 
 import (
 	"fmt"
-	"github.com/ventuary-lab/cache-updater/src/constants"
 	"strconv"
 	"strings"
+
+	"github.com/ventuary-lab/cache-updater/src/constants"
 )
 
 const BONDS_ORDERS_NAME = "f_bonds_orders"
