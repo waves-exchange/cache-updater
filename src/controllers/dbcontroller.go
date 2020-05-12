@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/go-pg/pg/v9"
 	"github.com/ventuary-lab/cache-updater/models"
@@ -176,11 +177,16 @@ func (dc *DbController) HandleBlocksMapUpdate () {
 
 	for {
 		fmt.Printf("min: %v, max: %v \n", minHeight, maxHeight)
+
 		fetchedBlocksMap := bm.GetBlocksMapSequenceByRange(fmt.Sprintf("%v", minHeight), fmt.Sprintf("%v", maxHeight))
 
 		freshData = append(freshData, *fetchedBlocksMap...)
 		minHeight = maxHeight + 1
 		maxHeight = maxHeight + maxRecordsCount + 1
+
+		if minHeight > maxHeight {
+			break
+		}
 
 		if maxHeight == maxHeightBm.Height {
 			break
@@ -196,14 +202,14 @@ func (dc *DbController) HandleBlocksMapUpdate () {
 		}
 	}
 
-	fmt.Printf("Data len is: %v \n", len(freshData))
-
 	fmt.Printf("blocks count: %v \n", len(freshData))
 	insertErr := dc.DbConnection.Insert(&freshData)
 
+	t := time.Now().Format(time.RFC3339)
+
 	if insertErr != nil {
-		fmt.Printf("Error occured on Insert... %v \n", insertErr)
+		fmt.Printf("%v; Error occured on Insert... %v \n", t, insertErr)
 	} else {
-		fmt.Printf("Successfully inserted %v rows \n", len(freshData))
+		fmt.Printf("%v; bonds_orders: Successfully inserted %v rows \n", t, len(freshData))
 	}
 }
