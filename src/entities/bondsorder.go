@@ -2,6 +2,7 @@ package entities
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -140,9 +141,9 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Status: status,
 		Resttotal: (total - filledtotal) / wavesContractPower,
 		Filledtotal: filledtotal / wavesContractPower,
-		Amount: total / (float64(price) * wavesContractPower / 100),
-		Filledamount: filledtotal / (float64(price) * wavesContractPower / 100),
-		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / 100),
+		Amount: math.Round(total / (float64(price) * wavesContractPower / float64(constants.NEUTRINO_DEC))),
+		Filledamount: math.Round(filledtotal / (float64(price) * wavesContractPower / float64(constants.NEUTRINO_DEC))),
+		Restamount: math.Round((total - filledtotal) / (float64(price) * wavesContractPower / float64(constants.NEUTRINO_DEC))),
 		Pairname: "usd-nb_usd-n",
 		Type: "buy",
 		DebugROI: uint64(orderROI),
