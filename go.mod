@@ -13,4 +13,5 @@ require (
 	github.com/go-pg/pg/v9 v9.1.3
 	github.com/joho/godotenv v1.3.0
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
+	golang.org/x/text v0.3.3 // indirect
 )

@@ -2,7 +2,6 @@ package entities
 
 import (
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
@@ -88,6 +87,10 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
     return false
 }
 
+func (bo *BondsOrder) debugPriceDiff (price int64) float64 {
+	return float64(price) / float64(constants.NEUTRINO_PRICE_DEC)
+}
+
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
 	height, _ := strconv.ParseInt(item[OrderHeightKey + id], 10, 64)
 	price, priceErr := strconv.ParseInt(item[OrderPriceKey + id], 10, 64)
@@ -131,7 +134,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 
 	wavesContractPower := float64(constants.WAVES_CONTRACT_POW)
 
-	return &BondsOrder {
+	bondsOrder := &BondsOrder {
 		OrderId: id,
 		Height: uint64(height),
 		Price: int(price),
@@ -141,9 +144,9 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Status: status,
 		Resttotal: (total - filledtotal) / wavesContractPower,
 		Filledtotal: filledtotal / wavesContractPower,
-		Amount: math.Round(total / (float64(price) * wavesContractPower / float64(constants.NEUTRINO_DEC))),
-		Filledamount: math.Round(filledtotal / (float64(price) * wavesContractPower / float64(constants.NEUTRINO_DEC))),
-		Restamount: math.Round((total - filledtotal) / (float64(price) * wavesContractPower / float64(constants.NEUTRINO_DEC))),
+		Amount: total / (float64(price) * wavesContractPower / float64(constants.OLD_NEUTRINO_PRICE_DEC)),
+		Filledamount: filledtotal / (float64(price) * wavesContractPower / float64(constants.OLD_NEUTRINO_PRICE_DEC)),
+		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / float64(constants.OLD_NEUTRINO_PRICE_DEC)),
 		Pairname: "usd-nb_usd-n",
 		Type: "buy",
 		DebugROI: uint64(orderROI),
@@ -151,5 +154,18 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		OrderNext: orderNext,
 		OrderPrev: orderPrev,
 		IsFirst: id == firstOrderId,
+	}
+
+	if priceDiff := bo.debugPriceDiff(orderPrice); priceDiff > constants.OLD_PRICE_DECIMAL_DIFF {
+		diffCoeff := float64(constants.NEUTRINO_PRICE_DEC / constants.OLD_NEUTRINO_PRICE_DEC)
+		bondsOrder.Price /= int(diffCoeff)
+		bondsOrder.Amount *= diffCoeff
+		bondsOrder.Filledamount *= diffCoeff
+		bondsOrder.Restamount *= diffCoeff
+		bondsOrder.DebugPrice /= uint64(diffCoeff)
+
+		return bondsOrder
+	} else {
+		return bondsOrder
 	}
 }
