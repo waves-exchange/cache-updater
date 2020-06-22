@@ -5,6 +5,5 @@ const (
 
 	OLD_NEUTRINO_PRICE_DEC = int(1e2)
 	NEUTRINO_PRICE_DEC = int(1e6)
-
-	OLD_PRICE_DECIMAL_DIFF = float64(1 / 1e3)
+	NEUTRINO_PRICE_DEC_DIFF = int(1e5)
 )

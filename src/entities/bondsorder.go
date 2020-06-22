@@ -87,8 +87,8 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
     return false
 }
 
-func (bo *BondsOrder) debugPriceDiff (price int64) float64 {
-	return float64(price) / float64(constants.NEUTRINO_PRICE_DEC)
+func (bo *BondsOrder) debugPriceDiff (price int64) int {
+	return int(float64(price) / float64(constants.NEUTRINO_PRICE_DEC_DIFF))
 }
 
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
@@ -156,16 +156,20 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		IsFirst: id == firstOrderId,
 	}
 
-	if priceDiff := bo.debugPriceDiff(orderPrice); priceDiff > constants.OLD_PRICE_DECIMAL_DIFF {
-		diffCoeff := float64(constants.NEUTRINO_PRICE_DEC / constants.OLD_NEUTRINO_PRICE_DEC)
-		bondsOrder.Price /= int(diffCoeff)
-		bondsOrder.Amount *= diffCoeff
-		bondsOrder.Filledamount *= diffCoeff
-		bondsOrder.Restamount *= diffCoeff
-		bondsOrder.DebugPrice /= uint64(diffCoeff)
+	// return bondsOrder
+	diffCoeff := constants.NEUTRINO_PRICE_DEC / constants.OLD_NEUTRINO_PRICE_DEC
+
+	// if price has 1e2 decimals
+	if priceDiff := bo.debugPriceDiff(orderPrice); priceDiff == 0 {
+		bondsOrder.DebugPrice *= uint64(diffCoeff)
+		bondsOrder.Price *= diffCoeff
 
 		return bondsOrder
 	} else {
+		bondsOrder.Amount *= float64(diffCoeff)
+		bondsOrder.Filledamount *= float64(diffCoeff)
+		bondsOrder.Restamount *= float64(diffCoeff)
+
 		return bondsOrder
 	}
 }
