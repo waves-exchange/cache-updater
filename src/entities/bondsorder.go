@@ -87,7 +87,7 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
     return false
 }
 
-func (bo *BondsOrder) debugPriceDiff (price int64) int {
+func (bo *BondsOrder) computePriceDiff (price int64) int {
 	return int(float64(price) / float64(constants.NEUTRINO_PRICE_DEC_DIFF))
 }
 
@@ -160,7 +160,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 	diffCoeff := constants.NEUTRINO_PRICE_DEC / constants.OLD_NEUTRINO_PRICE_DEC
 
 	// if price has 1e2 decimals
-	if priceDiff := bo.debugPriceDiff(orderPrice); priceDiff == 0 {
+	if priceDiff := bo.computePriceDiff(orderPrice); priceDiff == 0 {
 		bondsOrder.DebugPrice *= uint64(diffCoeff)
 		bondsOrder.Price *= diffCoeff
 
