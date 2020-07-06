@@ -87,6 +87,10 @@ func (bo *BondsOrder) Includes (s *[]BondsOrder, e *BondsOrder) bool {
     return false
 }
 
+func (bo *BondsOrder) computePriceDiff (price int64) int {
+	return int(float64(price) / float64(constants.NEUTRINO_PRICE_DEC_DIFF))
+}
+
 func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsOrder {
 	height, _ := strconv.ParseInt(item[OrderHeightKey + id], 10, 64)
 	price, priceErr := strconv.ParseInt(item[OrderPriceKey + id], 10, 64)
@@ -130,7 +134,7 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 
 	wavesContractPower := float64(constants.WAVES_CONTRACT_POW)
 
-	return &BondsOrder {
+	bondsOrder := &BondsOrder {
 		OrderId: id,
 		Height: uint64(height),
 		Price: int(price),
@@ -140,9 +144,9 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		Status: status,
 		Resttotal: (total - filledtotal) / wavesContractPower,
 		Filledtotal: filledtotal / wavesContractPower,
-		Amount: total / (float64(price) * wavesContractPower / 100),
-		Filledamount: filledtotal / (float64(price) * wavesContractPower / 100),
-		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / 100),
+		Amount: total / (float64(price) * wavesContractPower / float64(constants.OLD_NEUTRINO_PRICE_DEC)),
+		Filledamount: filledtotal / (float64(price) * wavesContractPower / float64(constants.OLD_NEUTRINO_PRICE_DEC)),
+		Restamount: (total - filledtotal) / (float64(price) * wavesContractPower / float64(constants.OLD_NEUTRINO_PRICE_DEC)),
 		Pairname: "usd-nb_usd-n",
 		Type: "buy",
 		DebugROI: uint64(orderROI),
@@ -150,5 +154,22 @@ func (bo *BondsOrder) MapItemToModel (id string, item map[string]string) *BondsO
 		OrderNext: orderNext,
 		OrderPrev: orderPrev,
 		IsFirst: id == firstOrderId,
+	}
+
+	// return bondsOrder
+	diffCoeff := constants.NEUTRINO_PRICE_DEC / constants.OLD_NEUTRINO_PRICE_DEC
+
+	// if price has 1e2 decimals
+	if priceDiff := bo.computePriceDiff(orderPrice); priceDiff == 0 {
+		bondsOrder.DebugPrice *= uint64(diffCoeff)
+		bondsOrder.Price *= diffCoeff
+
+		return bondsOrder
+	} else {
+		bondsOrder.Amount *= float64(diffCoeff)
+		bondsOrder.Filledamount *= float64(diffCoeff)
+		bondsOrder.Restamount *= float64(diffCoeff)
+
+		return bondsOrder
 	}
 }
