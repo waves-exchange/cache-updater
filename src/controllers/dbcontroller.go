@@ -23,6 +23,7 @@ func (dc *DbController) ConnectToDb () {
 		User:     dbuser,
 		Password: dbpass,
 		Database: dbdatabase,
+		PoolSize: 1,
 	})
 
 	dc.DbConnection = db
